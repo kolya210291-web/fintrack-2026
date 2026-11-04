@@ -1,0 +1,29 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.fintrack2026.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.fintrack2026.app"
+        minSdk 24
+        targetSdk 34
+        versionCode 8
+        versionName "2026.8.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+}

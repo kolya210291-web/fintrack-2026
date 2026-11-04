@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#00504a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>FinTrack 2026</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #eef2f6;
+      --surface: #ffffff;
+      --teal: #006a62;
+      --teal-dark: #00504a;
+      --teal-soft: #e6f4f1;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #cbd5e1;
+      --inc: #059669;
+      --exp: #e11d48;
+      --trf: #4f46e5;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-tap-highlight-color: transparent; }
+    html, body { width: 100%; min-height: 100dvh; background: var(--bg); color: var(--text); overflow-x: hidden; }
+    body { display: flex; flex-direction: column; padding-bottom: 82px; }
+    .android-appbar { width: 100%; background: var(--teal-dark); color: #fff; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 10px rgba(0,0,0,0.18); }
+    .appbar-left { display: flex; align-items: center; gap: 11px; }
+    .app-icon { width: 36px; height: 36px; border-radius: 10px; background: #2dd4bf; color: #003733; font-weight: 900; font-size: 19px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .appbar-title { font-size: 17px; font-weight: 800; line-height: 1.2; }
+    .ota-badge { font-size: 11px; color: #99f6e4; margin-top: 1px; }
+    .ota-btn { background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.28); color: #fff; padding: 7px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .who-bar { width: 100%; background: var(--surface); padding: 9px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; }
+    .who-switch { display: inline-flex; background: #f1f5f9; border-radius: 999px; padding: 3px; gap: 3px; }
+    .who-btn { border: none; background: transparent; padding: 6px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; }
+    .who-btn.active { background: var(--teal); color: #fff; box-shadow: 0 2px 6px rgba(0,106,98,0.25); }
+
+    .screen { display: none; width: 100%; max-width: 100%; padding: 12px; flex: 1; }
+    .screen.active { display: block; }
+    .form-layout { display: grid; grid-template-columns: 1fr; gap: 12px; width: 100%; }
+    .charts-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px; }
+    @media (min-width: 600px) {
+      .screen { max-width: 960px; margin: 0 auto; padding: 16px; }
+      .form-layout { grid-template-columns: 1.05fr 1fr; gap: 16px; align-items: start; }
+      .charts-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+    }
+
+    .card { background: var(--surface); border-radius: 20px; padding: 15px; box-shadow: 0 4px 16px rgba(15,23,42,0.05); border: 1px solid #e2e8f0; width: 100%; margin-bottom: 12px; }
+    .field-block { margin-bottom: 13px; }
+    .field-block:last-child { margin-bottom: 0; }
+    .field-label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; gap: 8px; }
+    .field-label { display: block; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 5px; }
+    .field-label-row .field-label { margin-bottom: 0; }
+    .add-pill-btn { border: 1px solid #99f6e4; background: var(--teal-soft); color: var(--teal-dark); font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+    .add-pill-btn:active, .add-pill-btn:hover { background: var(--teal); color: #fff; border-color: var(--teal); }
+
+    .period-bar { background: var(--surface); border-radius: 18px; padding: 12px; border: 1px solid #e2e8f0; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(15,23,42,0.04); }
+    .period-modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; background: #f1f5f9; padding: 4px; border-radius: 12px; margin-bottom: 10px; }
+    .p-mode-btn { border: none; background: transparent; padding: 8px 4px; border-radius: 9px; font-size: 12px; font-weight: 800; color: var(--muted); cursor: pointer; text-align: center; }
+    .p-mode-btn.active { background: var(--teal); color: #fff; box-shadow: 0 2px 5px rgba(0,106,98,0.2); }
+    .period-sub-row { display: flex; gap: 8px; align-items: center; }
+
+    .amount-cell { width: 100%; background: #f8fafc; border: 2.5px solid var(--teal); border-radius: 16px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; position: relative; }
+    .amount-cell.focused { box-shadow: 0 0 0 4px rgba(0, 106, 98, 0.15); background: #fff; }
+    .amount-number { font-size: 34px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .amount-number.placeholder { color: #94a3b8; }
+    .amount-currency { font-size: 16px; font-weight: 800; color: var(--teal); background: var(--teal-soft); padding: 6px 12px; border-radius: 10px; }
+
+    .numpad-drawer { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 10px; margin-top: 10px; user-select: none; }
+    .numpad-drawer.hidden { display: none; }
+    .num-key { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px 0; font-size: 23px; font-weight: 800; color: var(--text); cursor: pointer; }
+    .num-key:active { background: #e2e8f0; transform: scale(0.97); }
+    .num-key.fn { background: #f1f5f9; font-size: 19px; color: #334155; }
+    .num-key.ok { background: var(--teal); color: #fff; border-color: var(--teal); font-size: 15px; grid-column: span 3; padding: 11px 0; margin-top: 2px; }
+
+    input[type="date"], select, input[type="text"], input[type="number"] { width: 100%; padding: 12px 13px; border: 1.5px solid var(--border); border-radius: 13px; font-size: 15px; font-weight: 600; color: var(--text); background: #fff; outline: none; }
+    input:focus, select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,106,98,0.12); }
+    .type-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .type-tab { border: 1.5px solid var(--border); background: #f8fafc; padding: 12px 6px; border-radius: 13px; font-size: 14px; font-weight: 800; color: #475569; cursor: pointer; text-align: center; }
+    .type-tab.active-income { background: #ecfdf5; border-color: var(--inc); color: var(--inc); }
+    .type-tab.active-expense { background: #fff1f2; border-color: var(--exp); color: var(--exp); }
+    .type-tab.active-transfer { background: #eef2ff; border-color: var(--trf); color: var(--trf); }
+
+    .dynamic-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 13px; margin-bottom: 13px; }
+    .submit-btn { width: 100%; border: none; background: var(--teal); color: #fff; font-size: 16px; font-weight: 800; padding: 15px; border-radius: 15px; cursor: pointer; box-shadow: 0 4px 14px rgba(0, 106, 98, 0.28); transition: transform 0.08s; }
+    .submit-btn:active { transform: scale(0.98); }
+    .after-save-box { margin-top: 12px; background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 16px; padding: 14px; display: none; }
+    .after-save-msg { color: #065f46; font-size: 14px; font-weight: 800; margin-bottom: 10px; text-align: center; }
+    .after-save-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .action-btn { border: none; padding: 11px 10px; border-radius: 12px; font-size: 13px; font-weight: 800; cursor: pointer; text-align: center; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .action-btn.primary { background: var(--teal); color: #fff; }
+    .action-btn.secondary { background: #fff; color: var(--teal-dark); border: 1.5px solid #99f6e4; }
+
+    .back-btn { width: 100%; border: none; background: var(--teal); color: #fff; font-size: 15px; font-weight: 800; padding: 13px; border-radius: 14px; cursor: pointer; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .sub-back-btn { width: 100%; border: 1.5px solid var(--teal); background: var(--teal-soft); color: var(--teal-dark); font-size: 14px; font-weight: 800; padding: 11px; border-radius: 13px; cursor: pointer; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+
+    .kpi-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+    .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 12px; }
+    .kpi-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 10px; }
+    .kpi-lbl { font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+    .kpi-val { font-size: 15px; font-weight: 900; margin-top: 3px; font-variant-numeric: tabular-nums; }
+
+    .chart-box { position: relative; height: 220px; width: 100%; }
+    .chart-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
+    .chart-title { font-size: 13px; font-weight: 800; color: var(--teal-dark); }
+    .mini-toggle { display: inline-flex; background: #f1f5f9; border-radius: 8px; padding: 2px; }
+    .mini-toggle button { border: none; background: transparent; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; color: var(--muted); cursor: pointer; }
+    .mini-toggle button.active { background: #fff; color: var(--teal-dark); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+    .acc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 9px; }
+    .acc-item { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
+    .acc-item:active, .acc-item:hover { border-color: var(--teal); background: var(--teal-soft); }
+    .acc-item-top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 800; color: var(--text); }
+    .acc-item-bal { font-size: 17px; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .acc-item-hint { font-size: 11px; font-weight: 700; color: var(--teal); display: flex; justify-content: space-between; }
+
+    .filter-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 8px; }
+    .f-chip { border: 1px solid #cbd5e1; background: #f8fafc; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; color: #475569; cursor: pointer; white-space: nowrap; }
+    .f-chip.active { background: var(--teal); color: #fff; border-color: var(--teal); }
+
+    .mini-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .mini-table th { text-align: left; padding: 8px 6px; background: #f1f5f9; color: var(--muted); font-size: 10px; text-transform: uppercase; }
+    .mini-table td { padding: 10px 6px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    .row-actions { display: flex; gap: 5px; justify-content: flex-end; }
+    .edit-btn { border: 1px solid #cbd5e1; background: #f8fafc; color: var(--text); border-radius: 8px; padding: 5px 8px; font-size: 12px; font-weight: 800; cursor: pointer; }
+    .del-btn { border: none; background: #fff1f2; color: var(--exp); border-radius: 8px; padding: 5px 8px; font-size: 12px; font-weight: 800; cursor: pointer; }
+    .more-btn { width: 100%; border: 1.5px solid var(--border); background: #f8fafc; color: var(--text); padding: 11px; border-radius: 12px; font-size: 13px; font-weight: 800; cursor: pointer; margin-top: 10px; }
+
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); z-index: 100; display: none; align-items: flex-end; justify-content: center; }
+    .modal-backdrop.open { display: flex; }
+    .modal-sheet { background: var(--surface); width: 100%; max-width: 540px; border-radius: 24px 24px 0 0; padding: 18px 16px 24px; max-height: 92dvh; overflow-y: auto; }
+    @media (min-width: 600px) { .modal-backdrop { align-items: center; padding: 16px; } .modal-sheet { border-radius: 22px; } }
+    .modal-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; }
+    .modal-title { font-size: 16px; font-weight: 900; color: var(--teal-dark); }
+    .close-x { border: none; background: #f1f5f9; color: var(--text); width: 32px; height: 32px; border-radius: 999px; font-size: 15px; font-weight: 800; cursor: pointer; }
+
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; background: var(--surface); border-top: 1px solid #e2e8f0; display: grid; grid-template-columns: repeat(3, 1fr); padding: 6px 12px calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 60; box-shadow: 0 -2px 12px rgba(15,23,42,0.06); }
+    .nav-item { border: none; background: transparent; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; font-weight: 800; color: var(--muted); cursor: pointer; padding: 6px 0; border-radius: 12px; }
+    .nav-item.active { color: var(--teal-dark); background: var(--teal-soft); }
+  </style>
+</head>
+<body>
+  <header class="android-appbar">
+    <div class="appbar-left">
+      <div class="app-icon">₴</div>
+      <div>
+        <div class="appbar-title">FinTrack 2026</div>
+        <div class="ota-badge" id="otaStatusText">● OTA Online • Старт с 01.11.2026</div>
+      </div>
+    </div>
+    <button type="button" class="ota-btn" onclick="syncOtaFromSheet()">↻ Обновить</button>
+  </header>
+  <div class="who-bar">
+    <span style="font-size:13px;font-weight:800;color:#475569;">Активный профиль:</span>
+    <div class="who-switch">
+      <button type="button" class="who-btn active" id="whoKolya" onclick="setWho('Коля')">Коля</button>
+      <button type="button" class="who-btn" id="whoNastya" onclick="setWho('Настя')">Настя</button>
+    </div>
+  </div>
+
+  <!-- ОБЩАЯ ПАНЕЛЬ ВЫБОРА ПЕРИОДА (видна во вкладках Таблица и Карты) -->
+  <div id="globalPeriodWrapper" style="display:none;width:100%;max-width:960px;margin:10px auto 0;padding:0 12px;">
+    <div class="period-bar" style="margin-bottom:0;">
+      <div class="period-modes">
+        <button type="button" class="p-mode-btn active" id="pm-month" onclick="setPeriodMode('month')">Месяц</button>
+        <button type="button" class="p-mode-btn" id="pm-quarter" onclick="setPeriodMode('quarter')">Квартал</button>
+        <button type="button" class="p-mode-btn" id="pm-year" onclick="setPeriodMode('year')">Год</button>
+        <button type="button" class="p-mode-btn" id="pm-custom" onclick="setPeriodMode('custom')">Период</button>
+      </div>
+      <div id="pSubMonth" class="period-sub-row">
+        <button type="button" class="edit-btn" style="padding:10px 12px;" onclick="stepMonth(-1)">◀</button>
+        <select id="selMonthVal" onchange="applyPeriodFilter()">
+          <option value="2026-11" selected>Ноябрь 2026 (текущий)</option>
+          <option value="2026-12">Декабрь 2026</option>
+          <option value="2026-10">Октябрь 2026</option>
+          <option value="2026-09">Сентябрь 2026</option>
+          <option value="2026-08">Август 2026</option>
+          <option value="2026-07">Июль 2026</option>
+          <option value="2026-06">Июнь 2026</option>
+          <option value="2026-05">Май 2026</option>
+          <option value="2026-04">Апрель 2026</option>
+          <option value="2026-03">Март 2026</option>
+          <option value="2026-02">Февраль 2026</option>
+          <option value="2026-01">Январь 2026</option>
+        </select>
+        <button type="button" class="edit-btn" style="padding:10px 12px;" onclick="stepMonth(1)">▶</button>
+      </div>
+      <div id="pSubQuarter" class="period-sub-row" style="display:none;">
+        <select id="selQuarterVal" onchange="applyPeriodFilter()">
+          <option value="Q4" selected>IV квартал 2026 (Октябрь – Декабрь)</option>
+          <option value="Q3">III квартал 2026 (Июль – Сентябрь)</option>
+          <option value="Q2">II квартал 2026 (Апрель – Июнь)</option>
+          <option value="Q1">I квартал 2026 (Январь – Март)</option>
+        </select>
+      </div>
+      <div id="pSubYear" class="period-sub-row" style="display:none;">
+        <select id="selYearVal" onchange="applyPeriodFilter()">
+          <option value="2026" selected>Весь 2026 год</option>
+        </select>
+      </div>
+      <div id="pSubCustom" class="period-sub-row" style="display:none;">
+        <input type="date" id="customDateFrom" value="2026-11-01" onchange="applyPeriodFilter()" />
+        <span style="font-weight:800;color:var(--muted);">—</span>
+        <input type="date" id="customDateTo" value="2026-11-30" onchange="applyPeriodFilter()" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ВКЛАДКА 1: ВВОД СУММЫ -->
+  <main class="screen active" id="scr-form">
+    <div class="form-layout">
+      <div class="card">
+        <div class="field-block">
+          <span class="field-label">1. Сумма (циферблат или клавиатура ноутбука)</span>
+          <div class="amount-cell focused" id="amountCell" onclick="toggleNumpad(true); focusLaptopInput();" tabindex="0">
+            <span class="amount-number placeholder" id="amountText">0</span>
+            <span class="amount-currency">₴ UAH</span>
+            <input type="text" id="laptopKeyTrap" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;" />
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px;display:flex;align-items:center;gap:6px;">
+            <span>💻 С ноутбука:</span>
+            <span>печатайте сумму сразу на клавиатуре, Tab — следующее поле, Enter — записать</span>
+          </div>
+          <div class="numpad-drawer" id="numpadDrawer">
+            <button type="button" class="num-key" onclick="tapKey('1')">1</button>
+            <button type="button" class="num-key" onclick="tapKey('2')">2</button>
+            <button type="button" class="num-key" onclick="tapKey('3')">3</button>
+            <button type="button" class="num-key" onclick="tapKey('4')">4</button>
+            <button type="button" class="num-key" onclick="tapKey('5')">5</button>
+            <button type="button" class="num-key" onclick="tapKey('6')">6</button>
+            <button type="button" class="num-key" onclick="tapKey('7')">7</button>
+            <button type="button" class="num-key" onclick="tapKey('8')">8</button>
+            <button type="button" class="num-key" onclick="tapKey('9')">9</button>
+            <button type="button" class="num-key fn" onclick="tapDot()">.</button>
+            <button type="button" class="num-key" onclick="tapKey('0')">0</button>
+            <button type="button" class="num-key fn" onclick="tapBack()" ondblclick="clearAmt()">⌫</button>
+            <button type="button" class="num-key ok" onclick="toggleNumpad(false)">Готово (свернуть циферблат)</button>
+          </div>
+        </div>
+        <div class="field-block">
+          <label class="field-label">2. Дата</label>
+          <input type="date" id="dateField" onclick="toggleNumpad(false)" />
+        </div>
+        <div class="field-block">
+          <span class="field-label">3. Что это</span>
+          <div class="type-tabs">
+            <button type="button" class="type-tab" id="tabIncome" onclick="setOpType('Доход')">↑ Доход</button>
+            <button type="button" class="type-tab active-expense" id="tabExpense" onclick="setOpType('Расход')">↓ Расход</button>
+            <button type="button" class="type-tab" id="tabTransfer" onclick="setOpType('Перевод')">⇄ Перевод</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="dynamic-box">
+          <div class="field-block" style="margin-bottom:12px;">
+            <label class="field-label" id="cardFromLabel">4. Карта / Счет списания</label>
+            <select id="cardFromSelect" onchange="toggleNumpad(false)"></select>
+          </div>
+          <div class="field-block" id="transferToBlock" style="display:none;margin-bottom:0;">
+            <label class="field-label">5. Куда (Карта / Счет зачисления)</label>
+            <select id="cardToSelect"></select>
+          </div>
+          <div id="categoryBlock">
+            <div class="field-block" style="margin-bottom:12px;">
+              <div class="field-label-row">
+                <label class="field-label" id="catFieldLabel">5. Категория расхода</label>
+                <button type="button" class="add-pill-btn" onclick="openAddCatModal('cat')">＋ Новая категория</button>
+              </div>
+              <select id="catSelect" onchange="syncSubcategories()"></select>
+            </div>
+            <div class="field-block" id="subcatFieldBlock" style="margin-bottom:0;">
+              <div class="field-label-row">
+                <label class="field-label">6. Подкатегория</label>
+                <button type="button" class="add-pill-btn" onclick="openAddCatModal('sub')">＋ Новая подкатегория</button>
+              </div>
+              <select id="subcatSelect"></select>
+            </div>
+          </div>
+        </div>
+        <div class="field-block" id="commentBlock" style="margin-bottom:14px;">
+          <label class="field-label">Комментарий (необязательно)</label>
+          <input type="text" id="commentField" placeholder="Например: Ювілейний, АЗС..." onclick="toggleNumpad(false)" />
+        </div>
+        <button type="button" class="submit-btn" id="saveBtn" onclick="submitOp()">Записать в таблицу</button>
+        <div class="after-save-box" id="afterSaveBox">
+          <div class="after-save-msg" id="afterSaveMsg">✓ Записано!</div>
+          <div class="after-save-actions">
+            <button type="button" class="action-btn primary" onclick="switchTab('table')">📊 Проверить таблицу</button>
+            <a class="action-btn secondary" href="https://docs.google.com/spreadsheets/d/1sBsOT0X6hfY-Dt3O3k_HET52Kg4RlFVzQkiCNVkX28M/edit" target="_blank" rel="noopener">📂 Открыть Таблицу</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ВКЛАДКА 2: ОБЩАЯ АНАЛИТИКА И ВСЕ ТРАНЗАКЦИИ ЗА ПЕРИОД -->
+  <main class="screen" id="scr-table">
+    <button type="button" class="back-btn" onclick="switchTab('form')">← Вернуться к вводу суммы</button>
+
+    <div class="kpi-grid-3">
+      <div class="kpi-box"><div class="kpi-lbl">Доходы за период</div><div class="kpi-val" id="periodIncVal" style="color:var(--inc);">0 ₴</div></div>
+      <div class="kpi-box"><div class="kpi-lbl">Расходы за период</div><div class="kpi-val" id="periodExpVal" style="color:var(--exp);">0 ₴</div></div>
+      <div class="kpi-box"><div class="kpi-lbl">Итог периода</div><div class="kpi-val" id="periodNetVal" style="color:var(--teal-dark);">0 ₴</div></div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="card" style="margin-bottom:0;">
+        <div class="chart-hdr">
+          <span class="chart-title" id="generalDonutTitle">Структура по категориям</span>
+          <div class="mini-toggle">
+            <button type="button" class="active" id="genDonutExpBtn" onclick="setGenDonutType('Расход')">Расходы</button>
+            <button type="button" id="genDonutIncBtn" onclick="setGenDonutType('Доход')">Доходы</button>
+          </div>
+        </div>
+        <div class="chart-box"><canvas id="generalDonutCanvas"></canvas></div>
+      </div>
+      <div class="card" style="margin-bottom:0;">
+        <div class="chart-hdr">
+          <span class="chart-title">Динамика: Доходы vs Расходы</span>
+        </div>
+        <div class="chart-box"><canvas id="generalBarCanvas"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <div style="font-size:15px;font-weight:800;color:var(--teal-dark);" id="generalTxCountHdr">Операции за период</div>
+        <input type="text" id="generalSearchInput" placeholder="Поиск по категории, карте, сумме..." style="max-width:240px;padding:8px 12px;font-size:13px;" oninput="resetGeneralLimitAndRender()" />
+      </div>
+      <div class="filter-chips">
+        <button type="button" class="f-chip active" id="gf-ALL" onclick="setGeneralTypeFilter('ALL')">Все операции</button>
+        <button type="button" class="f-chip" id="gf-Расход" onclick="setGeneralTypeFilter('Расход')">↓ Расходы</button>
+        <button type="button" class="f-chip" id="gf-Доход" onclick="setGeneralTypeFilter('Доход')">↑ Доходы</button>
+        <button type="button" class="f-chip" id="gf-Перевод" onclick="setGeneralTypeFilter('Перевод')">⇄ Переводы</button>
+      </div>
+      <table class="mini-table">
+        <thead><tr><th>Сумма</th><th>Дата</th><th>Карта / Детали</th><th style="text-align:right;">Изм.</th></tr></thead>
+        <tbody id="liveRowsBody"><tr><td colspan="4" style="text-align:center;padding:16px;color:#64748b;">Загрузка...</td></tr></tbody>
+      </table>
+      <button type="button" class="more-btn" id="generalMoreBtn" style="display:none;" onclick="showMoreGeneralRows()">Показать ещё 50 операций</button>
+    </div>
+    <a class="action-btn secondary" style="width:100%;padding:14px;border-radius:14px;background:#fff;" href="https://docs.google.com/spreadsheets/d/1sBsOT0X6hfY-Dt3O3k_HET52Kg4RlFVzQkiCNVkX28M/edit" target="_blank" rel="noopener">📂 Открыть полную Google Таблицу</a>
+  </main>
+
+  <!-- ВКЛАДКА 3: КАРТЫ, СВОДНЫЕ ДИАГРАММЫ ПО КАЖДОЙ КАРТЕ И ВЫПИСКА -->
+  <main class="screen" id="scr-cards">
+    <button type="button" class="back-btn" onclick="switchTab('form')">← Вернуться к вводу суммы</button>
+
+    <div id="cardsOverviewBox">
+      <div class="card">
+        <div class="kpi-grid">
+          <div class="kpi-box"><div class="kpi-lbl">Общий баланс счетов</div><div class="kpi-val" id="liveTotalBal" style="color:var(--teal-dark);">0,00 ₴</div></div>
+          <div class="kpi-box"><div class="kpi-lbl" id="liveExpLabel">Расходы за период</div><div class="kpi-val" id="liveTotalExp" style="color:var(--exp);">0,00 ₴</div></div>
+        </div>
+        <div style="font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">Нажмите на карту, чтобы открыть её диаграммы и транзакции</div>
+        <div class="acc-list" id="liveAccountsGrid"></div>
+      </div>
+
+      <div class="card">
+        <div class="chart-hdr">
+          <span class="chart-title">Сводная диаграмма по всем картам за выбранный период</span>
+        </div>
+        <div class="chart-box" style="height:250px;"><canvas id="allCardsBarCanvas"></canvas></div>
+      </div>
+    </div>
+
+    <div id="singleAccountDetailBox" style="display:none;">
+      <button type="button" class="sub-back-btn" onclick="closeAccountDetail()">← Назад ко всем картам и счетам</button>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+          <div style="font-size:18px;font-weight:900;color:var(--teal-dark);" id="detailAccTitle">Карта</div>
+          <div style="font-size:13px;font-weight:800;color:var(--muted);">Текущий остаток: <span id="detailAccBal" style="color:var(--text);font-weight:900;">0 ₴</span></div>
+        </div>
+        <div class="kpi-grid-3">
+          <div class="kpi-box"><div class="kpi-lbl">Приход на карту</div><div class="kpi-val" id="detailAccInc" style="color:var(--inc);">0 ₴</div></div>
+          <div class="kpi-box"><div class="kpi-lbl">Расход с карты</div><div class="kpi-val" id="detailAccExp" style="color:var(--exp);">0 ₴</div></div>
+          <div class="kpi-box"><div class="kpi-lbl">Итог за период</div><div class="kpi-val" id="detailAccNet" style="color:var(--teal-dark);">0 ₴</div></div>
+        </div>
+
+        <div class="charts-grid" style="margin-top:10px;">
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:12px;">
+            <div class="chart-hdr">
+              <span class="chart-title" id="cardDonutTitle">Категории по карте</span>
+              <div class="mini-toggle">
+                <button type="button" class="active" id="cardDonutExpBtn" onclick="setCardDonutType('Расход')">Расходы</button>
+                <button type="button" id="cardDonutIncBtn" onclick="setCardDonutType('Доход')">Доходы</button>
+              </div>
+            </div>
+            <div class="chart-box" style="height:200px;"><canvas id="singleCardDonutCanvas"></canvas></div>
+          </div>
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:12px;">
+            <div class="chart-hdr">
+              <span class="chart-title">Динамика по карте за период</span>
+            </div>
+            <div class="chart-box" style="height:200px;"><canvas id="singleCardBarCanvas"></canvas></div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0 8px;flex-wrap:wrap;">
+          <div style="font-size:14px;font-weight:800;color:var(--teal-dark);" id="cardTxCountHdr">Операции по карте</div>
+          <input type="text" id="accSearchInput" placeholder="Поиск по операциям этой карты..." style="max-width:230px;padding:8px 12px;font-size:13px;" oninput="resetCardLimitAndRender()" />
+        </div>
+        <table class="mini-table">
+          <thead><tr><th>Сумма</th><th>Дата</th><th>Детали операции</th><th style="text-align:right;">Изм.</th></tr></thead>
+          <tbody id="accountTxBody"></tbody>
+        </table>
+        <button type="button" class="more-btn" id="cardMoreBtn" style="display:none;" onclick="showMoreCardRows()">Показать ещё 50 операций</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- МОДАЛЬНОЕ ОКНО СОЗДАНИЯ НОВОЙ КАТЕГОРИИ / ПОДКАТЕГОРИИ -->
+  <div class="modal-backdrop" id="addCatModalBackdrop">
+    <div class="modal-sheet">
+      <div class="modal-hdr">
+        <span class="modal-title" id="addCatModalTitle">＋ Добавить категорию / подкатегорию</span>
+        <button type="button" class="close-x" onclick="closeAddCatModal()">✕</button>
+      </div>
+      <div class="field-block">
+        <label class="field-label">Для какого типа операций</label>
+        <select id="newCatOpType" onchange="syncAddCatModalParentList()">
+          <option value="Расход">↓ Расход</option>
+          <option value="Доход">↑ Доход</option>
+        </select>
+      </div>
+      <div class="field-block">
+        <label class="field-label">Что добавляем</label>
+        <select id="newCatMode" onchange="toggleNewCatModeUI()">
+          <option value="sub">Подкатегорию в существующую категорию</option>
+          <option value="cat">Новую категорию (+ подкатегорию)</option>
+        </select>
+      </div>
+      <div class="field-block" id="existingCatSelectBlock">
+        <label class="field-label">Выберите категорию</label>
+        <select id="newCatParentSelect"></select>
+      </div>
+      <div class="field-block" id="newCatNameBlock" style="display:none;">
+        <label class="field-label">Название новой категории</label>
+        <input type="text" id="newCatNameInput" placeholder="Например: Подарки друзьям, Хобби..." />
+      </div>
+      <div class="field-block">
+        <label class="field-label" id="newSubcatLabel">Название новой подкатегории</label>
+        <input type="text" id="newSubcatNameInput" placeholder="Например: Ева, Розетка, Спортзал..." />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">
+        <button type="button" class="submit-btn" style="background:#f1f5f9;color:#0f172a;box-shadow:none;" onclick="closeAddCatModal()">Отмена</button>
+        <button type="button" class="submit-btn" onclick="saveNewCatOrSubcat()">✓ Создать</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ ЛЮБОЙ ТРАНЗАКЦИИ -->
+  <div class="modal-backdrop" id="editModalBackdrop">
+    <div class="modal-sheet">
+      <div class="modal-hdr">
+        <span class="modal-title">✏️ Редактировать операцию</span>
+        <button type="button" class="close-x" onclick="closeEditModal()">✕</button>
+      </div>
+      <input type="hidden" id="editRowNum" />
+      <div class="field-block">
+        <label class="field-label">1. Сумма (UAH)</label>
+        <input type="number" step="0.01" id="editAmount" />
+      </div>
+      <div class="field-block">
+        <label class="field-label">2. Дата</label>
+        <input type="date" id="editDate" />
+      </div>
+      <div class="field-block">
+        <label class="field-label">3. Тип операции</label>
+        <select id="editType" onchange="syncEditFormType()">
+          <option value="Расход">↓ Расход</option>
+          <option value="Доход">↑ Доход</option>
+          <option value="Перевод">⇄ Перевод</option>
+        </select>
+      </div>
+      <div class="field-block">
+        <label class="field-label" id="editCardFromLabel">4. Карта / Счет</label>
+        <select id="editCardFrom"></select>
+      </div>
+      <div class="field-block" id="editTransferToBlock" style="display:none;">
+        <label class="field-label">5. Куда (Карта зачисления)</label>
+        <select id="editCardTo"></select>
+      </div>
+      <div id="editCatSection">
+        <div class="field-block">
+          <label class="field-label" id="editCatLabel">5. Категория</label>
+          <select id="editCat" onchange="syncEditSubcats()"></select>
+        </div>
+        <div class="field-block" id="editSubcatBlock">
+          <label class="field-label">6. Подкатегория</label>
+          <select id="editSubcat"></select>
+        </div>
+      </div>
+      <div class="field-block">
+        <label class="field-label">Кто вносит</label>
+        <select id="editWho">
+          <option value="Коля">Коля</option>
+          <option value="Настя">Настя</option>
+        </select>
+      </div>
+      <div class="field-block" id="editDescBlock">
+        <label class="field-label">Комментарий</label>
+        <input type="text" id="editDesc" placeholder="Необязательно..." />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">
+        <button type="button" class="submit-btn" style="background:#f1f5f9;color:#0f172a;box-shadow:none;" onclick="closeEditModal()">Отмена</button>
+        <button type="button" class="submit-btn" id="editSaveBtn" onclick="saveEditedRow()">💾 Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ ANDROID -->
+  <nav class="bottom-nav">
+    <button type="button" class="nav-item active" id="nav-form" onclick="switchTab('form')"><span>➕</span><span>Ввод суммы</span></button>
+    <button type="button" class="nav-item" id="nav-table" onclick="switchTab('table')"><span>📊</span><span>Таблица</span></button>
+    <button type="button" class="nav-item" id="nav-cards" onclick="switchTab('cards')"><span>💳</span><span>Карты</span></button>
+  </nav>
+
+  <script>
+    var ACCOUNTS = ["Monobank black","Mono black ","Mono white","Monobank white","Privat24 (фт)","PUMB","Rada bank","Cash","Готівка","національний кешбек","Privat (%)"];
+    var EXPENSE_TREE = {"Продукти":["Атб, Сільпо, Варус і тд","Продуктовий","Вода","М'ясний","(без подкатегории)"],"Geely Emgrand 7":["АЗС (газ)","ТО (ремонт)","АЗС (бензин)","Страхова","Мийка","(без подкатегории)"],"Kia Seed":["АЗС (газ)","ТО (ремонт)","АЗС (бензин)","Мийка","(без подкатегории)"],"Кредити":[],"Сім'я та діти":["Одяг","Державный садок","логопед","Дитячий одяг","Здоров'я","Садочок, школа, гурток, логопед","Іграшки","танці","Одеса 2026","вкусняшки","(без подкатегории)"],"Дім":["Комунальні послуги","тему","Для дому","Ремонт, меблі","Аврора,Ta-Da, інші магазини","Побутова хімія","(без подкатегории)"],"Кафетерій":["Суші, піцца, пиво, рибка","Кава та обіди","Кав'ярні та ресторани","(без подкатегории)"],"Подарунки":[],"Розваги":["отпуск, путешествия","Парк, атракціони","Ігрова кімната (ДМАРТ)","Кино","пляж","футбол","(без подкатегории)"],"Здоров'я":["Аптека","Стоматолог","Зір, оптика, лінзи","больница","Стрижка","Краса (манікюр, педікюр, і тд)","Спорт","(без подкатегории)"],"Мобільний зв'язок":["Мобільний та Інтернет","Підписки","Юлайн","(без подкатегории)"],"інвестиції":[],"Рональд":["Смаколики","Грумінг","Здоров'я","(без подкатегории)"],"Навчання":[],"Інші розрахунки":[],"общественный транспорт":[]};
+    var INCOME_TREE = {"Зарплата Garvis":["Зарплата","Премія","Аванс","Відпускні","Лікарняні"],"Зарплата Моно":["Зарплата","9","31","отпуск","лікарняні"],"ЛФК":["Свят","Клим","Віка","Ваня","Стасік","(без подкатегории)"],"Дорога+":["Ранок","Вечір","(без подкатегории)"],"Подарунки":[],"Інші доходи":[],"Инвестиции":[],"Виплати":[],"Кешбек":[]};
+    var CHART_PALETTE = ["#006a62","#e11d48","#2563eb","#d97706","#7c3aed","#059669","#db2777","#0891b2","#4f46e5","#65a30d"];
+
+    var ALL_ACCOUNTS_DATA = [];
+    var LIVE_SHEET_ROWS = [];
+    var MERGED_TRANSACTIONS = [];
+
+    var selectedAccountName = "";
+    var periodMode = "month";
+    var genDonutType = "Расход";
+    var cardDonutType = "Расход";
+    var generalTypeFilter = "ALL";
+    var generalDisplayLimit = 50;
+    var cardDisplayLimit = 50;
+
+    var genDonutChart = null;
+    var genBarChart = null;
+    var allCardsBarChart = null;
+    var singleCardDonutChart = null;
+    var singleCardBarChart = null;
+
+    var amountStr = "";
+    var who = "Коля";
+    var opType = "Расход";
+    var pendingSyncCount = 0;
+    var todayIso = new Date().toISOString().slice(0, 10);
+    document.getElementById("dateField").value = todayIso;
+    document.getElementById("selMonthVal").value = todayIso.slice(0, 7);
+
+    var EXEC_API_URL = "https://script.google.com/macros/s/AKfycbwuSf96D2c6Yqyy-xkF27HcUH99JBobAhLyUZNwDNLPD7AdRKXl340hmj9ivBr5-MKy/exec";
+    var LOCAL_CACHE_KEY = "FINTRACK_2026_CACHE_V8";
+    function vib() { try { if (navigator.vibrate) navigator.vibrate(10); } catch (e) {} }
+    function callBackend(action, payload, onSuccess, onError) {
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        var runner = google.script.run.withSuccessHandler(onSuccess || function(){}).withFailureHandler(onError || function(){});
+        if (action === "bundle") runner.getOtaAppBundle();
+        else if (action === "save") runner.saveWebAppRow(payload);
+        else if (action === "update") runner.updateAnyTransaction(payload);
+        else if (action === "delete") runner.deleteAnyTransaction(payload);
+        else if (action === "addCat") runner.addCustomCategoryOrSubcategory(payload);
+      } else {
+        fetch(EXEC_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: action, payload: payload || {} })
+        }).then(function(r) { return r.json(); }).then(function(data) {
+          if (action === "save" && data && data.rowNumber !== undefined) { if (onSuccess) onSuccess(data.rowNumber); }
+          else { if (onSuccess) onSuccess(data); }
+        }).catch(function(err) { if (onError) onError(err); });
+      }
+    }
+    function fmtMoney(v) { return Number(v || 0).toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ₴"; }
+
+    function unpackAllTransactions() {
+      var list = [];
+      for (var i = 0; i < LIVE_SHEET_ROWS.length; i++) {
+        var r = LIVE_SHEET_ROWS[i];
+        if (r.isoDate && r.isoDate < "2026-11-01") continue;
+        list.push({
+          uid: "row_" + (r.rowNumber || ("tmp_" + i)),
+          rowNumber: r.rowNumber || 0,
+          rawAmount: Number(r.rawAmount) || 0,
+          isoDate: r.isoDate || todayIso,
+          type: r.type,
+          card: r.card,
+          toCard: r.toCard || "",
+          cat: r.cat || "",
+          sub: r.sub || "",
+          who: r.who || "Коля",
+          desc: r.desc || ""
+        });
+      }
+      list.sort(function(a, b) { return (b.isoDate || "").localeCompare(a.isoDate || ""); });
+      MERGED_TRANSACTIONS = list;
+      recomputeLocalAccountBalances();
+    }
+
+    function recomputeLocalAccountBalances() {
+      var balMap = {};
+      ACCOUNTS.forEach(function(a) { balMap[a.trim()] = { name: a, init: 0, inc: 0, exp: 0 }; });
+      ALL_ACCOUNTS_DATA.forEach(function(a) {
+        var k = a.name.trim();
+        if (!balMap[k]) balMap[k] = { name: a.name, init: 0, inc: 0, exp: 0 };
+        balMap[k].init = Number(a.rawInitBal) || 0;
+      });
+      MERGED_TRANSACTIONS.forEach(function(r) {
+        var cf = (r.card || "").trim();
+        var ct = (r.toCard || "").trim();
+        var amt = Number(r.rawAmount) || 0;
+        if (r.type === "Доход" && balMap[cf]) balMap[cf].inc += amt;
+        else if (r.type === "Расход" && balMap[cf]) balMap[cf].exp += amt;
+        else if (r.type === "Перевод") {
+          if (balMap[cf]) balMap[cf].exp += amt;
+          if (balMap[ct]) balMap[ct].inc += amt;
+        }
+      });
+      var totalBal = 0;
+      ALL_ACCOUNTS_DATA = Object.keys(balMap).map(function(k) {
+        var item = balMap[k];
+        var cur = item.init + item.inc - item.exp;
+        totalBal += cur;
+        return {
+          name: item.name,
+          rawInitBal: item.init,
+          rawBalance: cur,
+          balance: fmtMoney(cur)
+        };
+      });
+      var totalBalEl = document.getElementById("liveTotalBal");
+      if (totalBalEl) totalBalEl.textContent = fmtMoney(totalBal);
+    }
+
+    function getPeriodBounds() {
+      if (periodMode === "month") {
+        var selM = document.getElementById("selMonthVal");
+        var m = selM.value || "2026-11";
+        var mTxt = selM.options && selM.selectedIndex >= 0 ? selM.options[selM.selectedIndex].text.replace(" (текущий)", "") : m;
+        return { start: m + "-01", end: m + "-31", label: mTxt, byMonth: false };
+      }
+      if (periodMode === "quarter") {
+        var q = document.getElementById("selQuarterVal").value || "Q4";
+        if (q === "Q1") return { start: "2026-01-01", end: "2026-03-31", label: "I кв. 2026 (Янв–Мар)", byMonth: true };
+        if (q === "Q2") return { start: "2026-04-01", end: "2026-06-30", label: "II кв. 2026 (Апр–Июн)", byMonth: true };
+        if (q === "Q3") return { start: "2026-07-01", end: "2026-09-30", label: "III кв. 2026 (Июл–Сен)", byMonth: true };
+        return { start: "2026-10-01", end: "2026-12-31", label: "IV кв. 2026 (Окт–Дек)", byMonth: true };
+      }
+      if (periodMode === "year") {
+        return { start: "2026-01-01", end: "2026-12-31", label: "весь 2026 год", byMonth: true };
+      }
+      var s = document.getElementById("customDateFrom").value || "2026-11-01";
+      var e = document.getElementById("customDateTo").value || "2026-12-31";
+      var diffDays = (new Date(e) - new Date(s)) / (1000 * 3600 * 24);
+      return { start: s, end: e, label: "период " + s + " — " + e, byMonth: diffDays > 45 };
+    }
+
+    function filterByPeriod(rows) {
+      var b = getPeriodBounds();
+      return rows.filter(function(r) { return r.isoDate >= b.start && r.isoDate <= b.end; });
+    }
+
+    function stepMonth(dir) {
+      var sel = document.getElementById("selMonthVal");
+      var months = ["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12"];
+      var idx = months.indexOf(sel.value);
+      if (idx !== -1) {
+        var nextIdx = Math.max(0, Math.min(months.length - 1, idx + dir));
+        sel.value = months[nextIdx];
+        applyPeriodFilter();
+      }
+    }
+    function setPeriodMode(m) {
+      vib(); periodMode = m;
+      ["month", "quarter", "year", "custom"].forEach(function(k) {
+        document.getElementById("pm-" + k).classList.toggle("active", k === m);
+      });
+      document.getElementById("pSubMonth").style.display = m === "month" ? "flex" : "none";
+      document.getElementById("pSubQuarter").style.display = m === "quarter" ? "flex" : "none";
+      document.getElementById("pSubYear").style.display = m === "year" ? "flex" : "none";
+      document.getElementById("pSubCustom").style.display = m === "custom" ? "flex" : "none";
+      applyPeriodFilter();
+    }
+
+    function applyPeriodFilter() {
+      generalDisplayLimit = 50;
+      cardDisplayLimit = 50;
+      renderGeneralTab();
+      renderCardsOverviewCharts();
+      if (selectedAccountName) renderSingleAccountView();
+    }
+
+    function switchTab(tab) {
+      vib();
+      ["form", "table", "cards"].forEach(function(t) {
+        document.getElementById("scr-" + t).classList.toggle("active", t === tab);
+        document.getElementById("nav-" + t).classList.toggle("active", t === tab);
+      });
+      document.getElementById("globalPeriodWrapper").style.display = tab === "form" ? "none" : "block";
+      if (tab !== "form") {
+        applyPeriodFilter();
+      }
+    }
+
+    function setGenDonutType(t) {
+      genDonutType = t;
+      document.getElementById("genDonutExpBtn").classList.toggle("active", t === "Расход");
+      document.getElementById("genDonutIncBtn").classList.toggle("active", t === "Доход");
+      renderGeneralTab();
+    }
+
+    function setCardDonutType(t) {
+      cardDonutType = t;
+      document.getElementById("cardDonutExpBtn").classList.toggle("active", t === "Расход");
+      document.getElementById("cardDonutIncBtn").classList.toggle("active", t === "Доход");
+      renderSingleAccountView();
+    }
+
+    function setGeneralTypeFilter(f) {
+      generalTypeFilter = f;
+      ["ALL", "Расход", "Доход", "Перевод"].forEach(function(k) {
+        document.getElementById("gf-" + k).classList.toggle("active", k === f);
+      });
+      generalDisplayLimit = 50;
+      renderGeneralRowsList();
+    }
+
+    function resetGeneralLimitAndRender() { generalDisplayLimit = 50; renderGeneralRowsList(); }
+    function showMoreGeneralRows() { generalDisplayLimit += 50; renderGeneralRowsList(); }
+    function resetCardLimitAndRender() { cardDisplayLimit = 50; renderSingleAccountRowsList(); }
+    function showMoreCardRows() { cardDisplayLimit += 50; renderSingleAccountRowsList(); }
+
+    function buildDonutChart(canvasId, prevChart, rows, targetType) {
+      if (prevChart) prevChart.destroy();
+      var catMap = {};
+      rows.forEach(function(r) {
+        if (r.type === targetType && r.rawAmount > 0) {
+          var c = r.cat || "Прочее";
+          catMap[c] = (catMap[c] || 0) + r.rawAmount;
+        }
+      });
+      var entries = Object.keys(catMap).map(function(k) { return [k, catMap[k]]; }).sort(function(a, b) { return b[1] - a[1]; });
+      var top = entries.slice(0, 7);
+      var rest = entries.slice(7).reduce(function(s, x) { return s + x[1]; }, 0);
+      if (rest > 0) top.push(["Остальное", rest]);
+      if (top.length === 0) top.push(["Нет данных", 0]);
+      var ctx = document.getElementById(canvasId).getContext("2d");
+      return new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: top.map(function(x) { return x[0]; }),
+          datasets: [{ data: top.map(function(x) { return Math.round(x[1]); }), backgroundColor: CHART_PALETTE, borderWidth: 2, borderColor: "#fff" }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: "60%",
+          plugins: { legend: { position: "right", labels: { boxWidth: 10, font: { size: 11 } } } }
+        }
+      });
+    }
+
+    function buildTimelineBarChart(canvasId, prevChart, rows, forCardTrim) {
+      if (prevChart) prevChart.destroy();
+      var b = getPeriodBounds();
+      var buckets = {};
+      rows.forEach(function(r) {
+        var key = b.byMonth ? r.isoDate.slice(0, 7) : r.isoDate.slice(5, 10);
+        if (!buckets[key]) buckets[key] = { inc: 0, exp: 0 };
+        if (!forCardTrim) {
+          if (r.type === "Доход") buckets[key].inc += r.rawAmount;
+          else if (r.type === "Расход") buckets[key].exp += r.rawAmount;
+        } else {
+          var cf = (r.card || "").trim();
+          var ct = (r.toCard || "").trim();
+          if (r.type === "Доход" && cf === forCardTrim) buckets[key].inc += r.rawAmount;
+          else if (r.type === "Расход" && cf === forCardTrim) buckets[key].exp += r.rawAmount;
+          else if (r.type === "Перевод") {
+            if (cf === forCardTrim) buckets[key].exp += r.rawAmount;
+            if (ct === forCardTrim) buckets[key].inc += r.rawAmount;
+          }
+        }
+      });
+      var keys = Object.keys(buckets).sort();
+      var ctx = document.getElementById(canvasId).getContext("2d");
+      return new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: keys.length ? keys : ["Нет данных"],
+          datasets: [
+            { label: "Приход (₴)", data: keys.length ? keys.map(function(k) { return Math.round(buckets[k].inc); }) : [0], backgroundColor: "#059669", borderRadius: 4 },
+            { label: "Расход (₴)", data: keys.length ? keys.map(function(k) { return Math.round(buckets[k].exp); }) : [0], backgroundColor: "#e11d48", borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: "top", labels: { boxWidth: 10, font: { size: 11 } } } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    function renderGeneralTab() {
+      var pRows = filterByPeriod(MERGED_TRANSACTIONS);
+      var inc = 0, exp = 0;
+      pRows.forEach(function(r) {
+        if (r.type === "Доход") inc += r.rawAmount;
+        else if (r.type === "Расход") exp += r.rawAmount;
+      });
+      document.getElementById("periodIncVal").textContent = fmtMoney(inc);
+      document.getElementById("periodExpVal").textContent = fmtMoney(exp);
+      var net = inc - exp;
+      var netEl = document.getElementById("periodNetVal");
+      netEl.textContent = (net >= 0 ? "+" : "") + fmtMoney(net);
+      netEl.style.color = net >= 0 ? "var(--inc)" : "var(--exp)";
+
+      genDonutChart = buildDonutChart("generalDonutCanvas", genDonutChart, pRows, genDonutType);
+      genBarChart = buildTimelineBarChart("generalBarCanvas", genBarChart, pRows, "");
+      renderGeneralRowsList();
+    }
+
+    function renderGeneralRowsList() {
+      var pRows = filterByPeriod(MERGED_TRANSACTIONS);
+      var q = (document.getElementById("generalSearchInput").value || "").trim().toLowerCase();
+      var filtered = pRows.filter(function(r) {
+        if (generalTypeFilter !== "ALL" && r.type !== generalTypeFilter) return false;
+        if (q) {
+          var hay = (r.card + " " + r.toCard + " " + r.cat + " " + r.sub + " " + r.desc + " " + r.rawAmount + " " + r.isoDate).toLowerCase();
+          if (hay.indexOf(q) === -1) return false;
+        }
+        return true;
+      });
+      document.getElementById("generalTxCountHdr").textContent = "Операции за период (" + filtered.length + ")";
+      var slice = filtered.slice(0, generalDisplayLimit);
+      document.getElementById("generalMoreBtn").style.display = filtered.length > generalDisplayLimit ? "block" : "none";
+      document.getElementById("liveRowsBody").innerHTML = slice.map(function(r) {
+        var color = r.type === "Доход" ? "#059669" : (r.type === "Расход" ? "#e11d48" : "#4f46e5");
+        var sign = r.type === "Доход" ? "+" : (r.type === "Расход" ? "-" : "");
+        var dText = r.type === "Перевод" ? (r.card + " → " + r.toCard) : (r.cat + (r.sub ? " → " + r.sub : ""));
+        return "<tr>" +
+          "<td style=\"font-weight:900;color:" + color + ";white-space:nowrap;\">" + sign + fmtMoney(r.rawAmount) + "</td>" +
+          "<td style=\"white-space:nowrap;font-size:12px;\">" + r.isoDate + "</td>" +
+          "<td><div style=\"font-weight:700;\">" + dText + "</div><div style=\"font-size:11px;color:#64748b;\">" + r.card + " • " + r.who + (r.desc ? " • " + r.desc : "") + "</div></td>" +
+          "<td style=\"text-align:right;\"><div class=\"row-actions\"><button type=\"button\" class=\"edit-btn\" onclick=\"openEditByUid('" + r.uid + "')\">✏️</button><button type=\"button\" class=\"del-btn\" onclick=\"deleteByUid('" + r.uid + "')\">✕</button></div></td>" +
+        "</tr>";
+      }).join("") || "<tr><td colspan=\"4\" style=\"text-align:center;padding:14px;color:#64748b;\">Операций за выбранный период пока нет</td></tr>";
+    }
+
+    function renderCardsOverviewCharts() {
+      var b = getPeriodBounds();
+      var pRows = filterByPeriod(MERGED_TRANSACTIONS);
+      var periodExpSum = 0;
+      pRows.forEach(function(r) {
+        if (r.type === "Расход") periodExpSum += r.rawAmount;
+      });
+      var expLblEl = document.getElementById("liveExpLabel");
+      if (expLblEl) expLblEl.textContent = "Расходы за " + b.label;
+      var expValEl = document.getElementById("liveTotalExp");
+      if (expValEl) expValEl.textContent = fmtMoney(periodExpSum);
+
+      var byCard = {};
+      ACCOUNTS.forEach(function(a) { byCard[a.trim()] = { name: a, inc: 0, exp: 0, count: 0 }; });
+      pRows.forEach(function(r) {
+        var cf = (r.card || "").trim();
+        var ct = (r.toCard || "").trim();
+        if (r.type === "Доход" && byCard[cf]) { byCard[cf].inc += r.rawAmount; byCard[cf].count++; }
+        else if (r.type === "Расход" && byCard[cf]) { byCard[cf].exp += r.rawAmount; byCard[cf].count++; }
+        else if (r.type === "Перевод") {
+          if (byCard[cf]) { byCard[cf].exp += r.rawAmount; byCard[cf].count++; }
+          if (byCard[ct]) { byCard[ct].inc += r.rawAmount; byCard[ct].count++; }
+        }
+      });
+
+      document.getElementById("liveAccountsGrid").innerHTML = ALL_ACCOUNTS_DATA.map(function(a) {
+        var safeName = a.name.replace(/'/g, "\\'");
+        var st = byCard[a.name.trim()] || { count: 0, exp: 0 };
+        return "<div class=\"acc-item\" onclick=\"openAccountDetail('" + safeName + "')\">" +
+          "<div class=\"acc-item-top\"><span>" + a.name + "</span><span>📊 →</span></div>" +
+          "<div class=\"acc-item-bal\">" + a.balance + "</div>" +
+          "<div class=\"acc-item-hint\"><span>За период: " + st.count + " оп.</span><span>Открыть</span></div>" +
+        "</div>";
+      }).join("");
+
+      if (allCardsBarChart) allCardsBarChart.destroy();
+      var activeCards = Object.values(byCard).filter(function(x) { return x.inc > 0 || x.exp > 0; });
+      if (!activeCards.length) activeCards = Object.values(byCard).slice(0, 5);
+      var ctx = document.getElementById("allCardsBarCanvas").getContext("2d");
+      allCardsBarChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: activeCards.map(function(x) { return x.name; }),
+          datasets: [
+            { label: "Приход за период (₴)", data: activeCards.map(function(x) { return Math.round(x.inc); }), backgroundColor: "#059669", borderRadius: 4 },
+            { label: "Расход за период (₴)", data: activeCards.map(function(x) { return Math.round(x.exp); }), backgroundColor: "#e11d48", borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: "top", labels: { boxWidth: 10, font: { size: 11 } } } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    function openAccountDetail(accName) {
+      vib();
+      selectedAccountName = accName;
+      cardDisplayLimit = 50;
+      document.getElementById("cardsOverviewBox").style.display = "none";
+      document.getElementById("singleAccountDetailBox").style.display = "block";
+      renderSingleAccountView();
+    }
+
+    function closeAccountDetail() {
+      vib();
+      selectedAccountName = "";
+      document.getElementById("singleAccountDetailBox").style.display = "none";
+      document.getElementById("cardsOverviewBox").style.display = "block";
+      renderCardsOverviewCharts();
+    }
+
+    function getAccountPeriodRows(accTrim) {
+      var pRows = filterByPeriod(MERGED_TRANSACTIONS);
+      return pRows.filter(function(r) {
+        return (r.card || "").trim() === accTrim || (r.toCard || "").trim() === accTrim;
+      });
+    }
+
+    function renderSingleAccountView() {
+      if (!selectedAccountName) return;
+      var accTrim = selectedAccountName.trim();
+      var accMeta = null;
+      for (var i = 0; i < ALL_ACCOUNTS_DATA.length; i++) {
+        if (ALL_ACCOUNTS_DATA[i].name.trim() === accTrim) { accMeta = ALL_ACCOUNTS_DATA[i]; break; }
+      }
+      document.getElementById("detailAccTitle").textContent = "💳 " + selectedAccountName;
+      document.getElementById("detailAccBal").textContent = accMeta ? accMeta.balance : "0,00 ₴";
+
+      var cardRows = getAccountPeriodRows(accTrim);
+      var cInc = 0, cExp = 0;
+      var donutSourceRows = [];
+      cardRows.forEach(function(r) {
+        var cf = (r.card || "").trim();
+        var ct = (r.toCard || "").trim();
+        if (r.type === "Доход" && cf === accTrim) {
+          cInc += r.rawAmount;
+          donutSourceRows.push(r);
+        } else if (r.type === "Расход" && cf === accTrim) {
+          cExp += r.rawAmount;
+          donutSourceRows.push(r);
+        } else if (r.type === "Перевод") {
+          if (cf === accTrim) cExp += r.rawAmount;
+          if (ct === accTrim) cInc += r.rawAmount;
+        }
+      });
+      document.getElementById("detailAccInc").textContent = "+" + fmtMoney(cInc);
+      document.getElementById("detailAccExp").textContent = "-" + fmtMoney(cExp);
+      var cNet = cInc - cExp;
+      var netEl = document.getElementById("detailAccNet");
+      netEl.textContent = (cNet >= 0 ? "+" : "") + fmtMoney(cNet);
+      netEl.style.color = cNet >= 0 ? "var(--inc)" : "var(--exp)";
+
+      singleCardDonutChart = buildDonutChart("singleCardDonutCanvas", singleCardDonutChart, donutSourceRows, cardDonutType);
+      singleCardBarChart = buildTimelineBarChart("singleCardBarCanvas", singleCardBarChart, cardRows, accTrim);
+      renderSingleAccountRowsList();
+    }
+
+    function renderSingleAccountRowsList() {
+      var accTrim = selectedAccountName.trim();
+      var cardRows = getAccountPeriodRows(accTrim);
+      var q = (document.getElementById("accSearchInput").value || "").trim().toLowerCase();
+      var filtered = cardRows.filter(function(r) {
+        if (!q) return true;
+        var hay = (r.cat + " " + r.sub + " " + r.desc + " " + r.rawAmount + " " + r.isoDate + " " + r.type + " " + r.card + " " + r.toCard).toLowerCase();
+        return hay.indexOf(q) !== -1;
+      });
+      document.getElementById("cardTxCountHdr").textContent = "Операции по счету за период (" + filtered.length + ")";
+      var slice = filtered.slice(0, cardDisplayLimit);
+      document.getElementById("cardMoreBtn").style.display = filtered.length > cardDisplayLimit ? "block" : "none";
+      document.getElementById("accountTxBody").innerHTML = slice.map(function(r) {
+        var isIncomingTrf = (r.type === "Перевод" && (r.toCard || "").trim() === accTrim);
+        var color = r.type === "Доход" ? "#059669" : (r.type === "Расход" ? "#e11d48" : (isIncomingTrf ? "#059669" : "#4f46e5"));
+        var sign = (r.type === "Доход" || isIncomingTrf) ? "+" : "-";
+        var dText = r.type === "Перевод" ? ("Перевод: " + r.card + " → " + r.toCard) : (r.cat + (r.sub ? " → " + r.sub : ""));
+        return "<tr>" +
+          "<td style=\"font-weight:900;color:" + color + ";white-space:nowrap;\">" + sign + fmtMoney(r.rawAmount) + "</td>" +
+          "<td style=\"white-space:nowrap;font-size:12px;\">" + r.isoDate + "</td>" +
+          "<td><div style=\"font-weight:700;\">" + dText + "</div><div style=\"font-size:11px;color:#64748b;\">" + r.who + (r.desc ? " • " + r.desc : "") + "</div></td>" +
+          "<td style=\"text-align:right;\"><div class=\"row-actions\"><button type=\"button\" class=\"edit-btn\" onclick=\"openEditByUid('" + r.uid + "')\">✏️</button><button type=\"button\" class=\"del-btn\" onclick=\"deleteByUid('" + r.uid + "')\">✕</button></div></td>" +
+        "</tr>";
+      }).join("") || "<tr><td colspan=\"4\" style=\"text-align:center;padding:16px;color:#64748b;\">По этому счету за выбранный период операций нет</td></tr>";
+    }
+
+    /* СОЗДАНИЕ НОВЫХ КАТЕГОРИЙ И ПОДКАТЕГОРИЙ */
+    function openAddCatModal(mode) {
+      vib();
+      var curType = opType === "Перевод" ? "Расход" : opType;
+      document.getElementById("newCatOpType").value = curType;
+      document.getElementById("newCatMode").value = mode === "cat" ? "cat" : "sub";
+      syncAddCatModalParentList();
+      if (document.getElementById("catSelect").value) {
+        document.getElementById("newCatParentSelect").value = document.getElementById("catSelect").value;
+      }
+      toggleNewCatModeUI();
+      document.getElementById("newCatNameInput").value = "";
+      document.getElementById("newSubcatNameInput").value = "";
+      document.getElementById("addCatModalBackdrop").classList.add("open");
+      setTimeout(function() {
+        if (mode === "cat") document.getElementById("newCatNameInput").focus();
+        else document.getElementById("newSubcatNameInput").focus();
+      }, 60);
+    }
+    function closeAddCatModal() {
+      document.getElementById("addCatModalBackdrop").classList.remove("open");
+    }
+    function syncAddCatModalParentList() {
+      var t = document.getElementById("newCatOpType").value;
+      var tree = t === "Доход" ? INCOME_TREE : EXPENSE_TREE;
+      document.getElementById("newCatParentSelect").innerHTML = Object.keys(tree).map(function(c) {
+        return "<option value=\"" + c + "\">" + c + "</option>";
+      }).join("");
+    }
+    function toggleNewCatModeUI() {
+      var m = document.getElementById("newCatMode").value;
+      document.getElementById("existingCatSelectBlock").style.display = m === "sub" ? "block" : "none";
+      document.getElementById("newCatNameBlock").style.display = m === "cat" ? "block" : "none";
+      document.getElementById("newSubcatLabel").textContent = m === "cat" ? "Первая подкатегория (необязательно)" : "Название новой подкатегории";
+    }
+    function saveNewCatOrSubcat() {
+      vib();
+      var t = document.getElementById("newCatOpType").value;
+      var m = document.getElementById("newCatMode").value;
+      var catName = m === "cat" ? document.getElementById("newCatNameInput").value.trim() : document.getElementById("newCatParentSelect").value;
+      var subName = document.getElementById("newSubcatNameInput").value.trim();
+      if (!catName) { alert("Введите название категории"); return; }
+      if (m === "sub" && !subName) { alert("Введите название подкатегории"); return; }
+
+      var tree = t === "Доход" ? INCOME_TREE : EXPENSE_TREE;
+      if (!tree[catName]) tree[catName] = [];
+      if (subName && tree[catName].indexOf(subName) === -1) {
+        var noSubIdx = tree[catName].indexOf("(без подкатегории)");
+        if (noSubIdx !== -1) tree[catName].splice(noSubIdx, 0, subName);
+        else tree[catName].push(subName);
+        if (tree[catName].indexOf("(без подкатегории)") === -1) tree[catName].push("(без подкатегории)");
+      }
+
+      // Мгновенно обновляем выпадающие списки на экране
+      setOpType(t);
+      document.getElementById("catSelect").value = catName;
+      syncSubcategories();
+      if (subName) document.getElementById("subcatSelect").value = subName;
+      closeAddCatModal();
+
+      // Сохраняем в фоне в таблицу и облако
+      callBackend("addCat", { type: t, cat: catName, sub: subName });
+    }
+
+    function openEditByUid(uid) {
+      vib();
+      var rowObj = null;
+      for (var i = 0; i < MERGED_TRANSACTIONS.length; i++) {
+        if (MERGED_TRANSACTIONS[i].uid === uid) { rowObj = MERGED_TRANSACTIONS[i]; break; }
+      }
+      if (!rowObj) return;
+      document.getElementById("editRowNum").value = rowObj.rowNumber || 0;
+      document.getElementById("editAmount").value = rowObj.rawAmount;
+      document.getElementById("editDate").value = rowObj.isoDate;
+      document.getElementById("editType").value = rowObj.type || "Расход";
+      syncEditFormType();
+      document.getElementById("editCardFrom").value = rowObj.card;
+      if (rowObj.type === "Перевод") {
+        document.getElementById("editCardTo").value = rowObj.toCard;
+      } else {
+        var tree = rowObj.type === "Доход" ? INCOME_TREE : EXPENSE_TREE;
+        if (rowObj.cat && !tree[rowObj.cat]) tree[rowObj.cat] = rowObj.sub ? [rowObj.sub] : [];
+        syncEditFormType();
+        document.getElementById("editCat").value = rowObj.cat;
+        syncEditSubcats();
+        document.getElementById("editSubcat").value = rowObj.sub || "";
+      }
+      document.getElementById("editWho").value = rowObj.who || "Коля";
+      document.getElementById("editDesc").value = rowObj.desc || "";
+      document.getElementById("editModalBackdrop").classList.add("open");
+    }
+
+    function closeEditModal() {
+      document.getElementById("editModalBackdrop").classList.remove("open");
+    }
+
+    function syncEditFormType() {
+      var t = document.getElementById("editType").value;
+      var isTrf = t === "Перевод";
+      document.getElementById("editCardFromLabel").textContent = t === "Доход" ? "4. Карта зачисления" : (isTrf ? "4. Откуда (Карта списания)" : "4. Карта списания");
+      document.getElementById("editTransferToBlock").style.display = isTrf ? "block" : "none";
+      document.getElementById("editCatSection").style.display = isTrf ? "none" : "block";
+      document.getElementById("editDescBlock").style.display = isTrf ? "none" : "block";
+      if (!isTrf) {
+        var tree = t === "Доход" ? INCOME_TREE : EXPENSE_TREE;
+        document.getElementById("editCatLabel").textContent = t === "Доход" ? "5. Категория дохода" : "5. Категория расхода";
+        document.getElementById("editCat").innerHTML = Object.keys(tree).map(function(c) { return "<option value=\"" + c + "\">" + c + "</option>"; }).join("");
+        syncEditSubcats();
+      }
+    }
+
+    function syncEditSubcats() {
+      var t = document.getElementById("editType").value;
+      var tree = t === "Доход" ? INCOME_TREE : EXPENSE_TREE;
+      var cat = document.getElementById("editCat").value;
+      var subs = tree[cat] || [];
+      var block = document.getElementById("editSubcatBlock");
+      var sel = document.getElementById("editSubcat");
+      if (subs.length === 0) { block.style.display = "none"; sel.innerHTML = "<option value=\"\"></option>"; }
+      else {
+        block.style.display = "block";
+        sel.innerHTML = subs.map(function(s) { return "<option value=\"" + (s === "(без подкатегории)" ? "" : s) + "\">" + s + "</option>"; }).join("");
+      }
+    }
+
+    function saveEditedRow() {
+      vib();
+      var rowNum = parseInt(document.getElementById("editRowNum").value, 10) || 0;
+      var amt = parseFloat(document.getElementById("editAmount").value);
+      if (!amt || amt <= 0) return;
+      var t = document.getElementById("editType").value;
+      var payload = {
+        rowNumber: rowNum,
+        amount: amt,
+        date: document.getElementById("editDate").value,
+        type: t,
+        card: document.getElementById("editCardFrom").value,
+        toCard: t === "Перевод" ? document.getElementById("editCardTo").value : "",
+        cat: t === "Перевод" ? "" : document.getElementById("editCat").value,
+        sub: t === "Перевод" ? "" : document.getElementById("editSubcat").value,
+        who: document.getElementById("editWho").value,
+        desc: t === "Перевод" ? "" : document.getElementById("editDesc").value.trim()
+      };
+      // Мгновенно обновляем в памяти
+      for (var i = 0; i < LIVE_SHEET_ROWS.length; i++) {
+        if (LIVE_SHEET_ROWS[i].rowNumber === rowNum) {
+          LIVE_SHEET_ROWS[i].rawAmount = amt;
+          LIVE_SHEET_ROWS[i].isoDate = payload.date;
+          LIVE_SHEET_ROWS[i].type = payload.type;
+          LIVE_SHEET_ROWS[i].card = payload.card;
+          LIVE_SHEET_ROWS[i].toCard = payload.toCard;
+          LIVE_SHEET_ROWS[i].cat = payload.cat;
+          LIVE_SHEET_ROWS[i].sub = payload.sub;
+          LIVE_SHEET_ROWS[i].who = payload.who;
+          LIVE_SHEET_ROWS[i].desc = payload.desc;
+          break;
+        }
+      }
+      closeEditModal();
+      unpackAllTransactions();
+      applyPeriodFilter();
+      callBackend("update", payload, function() { syncOtaFromSheet(); });
+    }
+
+    function deleteByUid(uid) {
+      vib();
+      var rowObj = null;
+      for (var i = 0; i < MERGED_TRANSACTIONS.length; i++) {
+        if (MERGED_TRANSACTIONS[i].uid === uid) { rowObj = MERGED_TRANSACTIONS[i]; break; }
+      }
+      if (!rowObj) return;
+      LIVE_SHEET_ROWS = LIVE_SHEET_ROWS.filter(function(r) { return r.rowNumber !== rowObj.rowNumber; });
+      unpackAllTransactions();
+      applyPeriodFilter();
+      callBackend("delete", { rowNumber: rowObj.rowNumber }, function() { syncOtaFromSheet(); });
+    }
+
+    function renderAmt() {
+      var el = document.getElementById("amountText");
+      if (!amountStr) { el.textContent = "0"; el.classList.add("placeholder"); }
+      else { el.textContent = amountStr; el.classList.remove("placeholder"); }
+    }
+    function focusLaptopInput() {
+      try {
+        var trap = document.getElementById("laptopKeyTrap");
+        if (trap) trap.focus();
+      } catch (e) {}
+    }
+    function toggleNumpad(open) {
+      document.getElementById("numpadDrawer").classList.toggle("hidden", !open);
+      document.getElementById("amountCell").classList.toggle("focused", open);
+    }
+    function tapKey(d) {
+      vib();
+      if (amountStr === "0") amountStr = d;
+      else if (amountStr.indexOf(".") !== -1) { if (amountStr.split(".")[1].length < 2) amountStr += d; }
+      else if (amountStr.length < 8) amountStr += d;
+      renderAmt();
+    }
+    function tapDot() { vib(); if (!amountStr) amountStr = "0."; else if (amountStr.indexOf(".") === -1) amountStr += "."; renderAmt(); }
+    function tapBack() { vib(); amountStr = amountStr.slice(0, -1); renderAmt(); }
+    function clearAmt() { vib(); amountStr = ""; renderAmt(); }
+    function setWho(w) {
+      vib(); who = w;
+      document.getElementById("whoKolya").classList.toggle("active", w === "Коля");
+      document.getElementById("whoNastya").classList.toggle("active", w === "Настя");
+      document.getElementById("cardFromSelect").value = w === "Настя" ? "Mono black " : "Monobank black";
+    }
+    function populateAccountsDropdowns() {
+      var prevFrom = document.getElementById("cardFromSelect").value;
+      var prevTo = document.getElementById("cardToSelect").value;
+      var opts = ACCOUNTS.map(function(a) { return "<option value=\"" + a + "\">" + a + "</option>"; }).join("");
+      document.getElementById("cardFromSelect").innerHTML = opts;
+      document.getElementById("cardToSelect").innerHTML = opts;
+      document.getElementById("editCardFrom").innerHTML = opts;
+      document.getElementById("editCardTo").innerHTML = opts;
+      if (prevFrom && ACCOUNTS.indexOf(prevFrom) !== -1) document.getElementById("cardFromSelect").value = prevFrom;
+      if (prevTo && ACCOUNTS.indexOf(prevTo) !== -1) document.getElementById("cardToSelect").value = prevTo;
+      else if (ACCOUNTS.length > 1) document.getElementById("cardToSelect").selectedIndex = 1;
+    }
+    function setOpType(t) {
+      vib(); opType = t;
+      document.getElementById("tabIncome").className = "type-tab" + (t === "Доход" ? " active-income" : "");
+      document.getElementById("tabExpense").className = "type-tab" + (t === "Расход" ? " active-expense" : "");
+      document.getElementById("tabTransfer").className = "type-tab" + (t === "Перевод" ? " active-transfer" : "");
+      var isTrf = t === "Перевод";
+      document.getElementById("cardFromLabel").textContent = t === "Доход" ? "4. Карта / Счет зачисления" : (isTrf ? "4. Откуда (Карта / Счет списания)" : "4. Карта / Счет списания");
+      document.getElementById("transferToBlock").style.display = isTrf ? "block" : "none";
+      document.getElementById("categoryBlock").style.display = isTrf ? "none" : "block";
+      document.getElementById("commentBlock").style.display = isTrf ? "none" : "block";
+      if (!isTrf) {
+        var tree = t === "Доход" ? INCOME_TREE : EXPENSE_TREE;
+        document.getElementById("catFieldLabel").textContent = t === "Доход" ? "5. Категория дохода" : "5. Категория расхода";
+        var prevCat = document.getElementById("catSelect").value;
+        document.getElementById("catSelect").innerHTML = Object.keys(tree).map(function(c) { return "<option value=\"" + c + "\">" + c + "</option>"; }).join("");
+        if (prevCat && tree[prevCat]) document.getElementById("catSelect").value = prevCat;
+        syncSubcategories();
+      }
+    }
+    function syncSubcategories() {
+      var tree = opType === "Доход" ? INCOME_TREE : EXPENSE_TREE;
+      var cat = document.getElementById("catSelect").value;
+      var subs = tree[cat] || [];
+      var sel = document.getElementById("subcatSelect");
+      if (subs.length === 0) {
+        sel.innerHTML = "<option value=\"\">(без подкатегории — нажмите ＋ чтобы создать)</option>";
+      } else {
+        sel.innerHTML = subs.map(function(s) { return "<option value=\"" + (s === "(без подкатегории)" ? "" : s) + "\">" + s + "</option>"; }).join("");
+      }
+    }
+
+    /* МГНОВЕННОЕ СОХРАНЕНИЕ (0.05 СЕК) + ФОНОВАЯ СИНХРОНИЗАЦИЯ */
+    function submitOp() {
+      vib();
+      var amt = parseFloat(amountStr);
+      var box = document.getElementById("afterSaveBox");
+      var msg = document.getElementById("afterSaveMsg");
+      if (!amt || amt <= 0) { box.style.display = "block"; msg.style.color = "#e11d48"; msg.textContent = "Введите сумму на циферблате или с клавиатуры"; toggleNumpad(true); return; }
+      var cardFrom = document.getElementById("cardFromSelect").value;
+      var cardTo = document.getElementById("cardToSelect").value;
+      if (opType === "Перевод" && cardFrom === cardTo) { box.style.display = "block"; msg.style.color = "#e11d48"; msg.textContent = "Карты Откуда и Куда должны отличаться"; return; }
+      var payload = {
+        amount: amt, date: document.getElementById("dateField").value, type: opType,
+        card: cardFrom, toCard: opType === "Перевод" ? cardTo : "",
+        cat: opType === "Перевод" ? "" : document.getElementById("catSelect").value,
+        sub: opType === "Перевод" ? "" : document.getElementById("subcatSelect").value,
+        who: who, desc: opType === "Перевод" ? "" : document.getElementById("commentField").value.trim()
+      };
+
+      // 1. Мгновенно (за 0.05 сек) очищаем поле ввода и добавляем операцию в интерфейс без блокировки кнопки!
+      var tempId = -Date.now();
+      LIVE_SHEET_ROWS.unshift({
+        rowNumber: tempId,
+        rawAmount: payload.amount,
+        isoDate: payload.date,
+        type: payload.type,
+        card: payload.card,
+        toCard: payload.toCard,
+        cat: payload.cat,
+        sub: payload.sub,
+        who: payload.who,
+        desc: payload.desc
+      });
+      clearAmt();
+      document.getElementById("commentField").value = "";
+      unpackAllTransactions();
+      applyPeriodFilter();
+
+      pendingSyncCount++;
+      box.style.display = "block";
+      msg.style.color = "#065f46";
+      msg.textContent = "⚡ Мгновенно записано: " + payload.type + " " + payload.amount.toFixed(2) + " ₴ (можно сразу вводить следующую!)";
+      document.getElementById("otaStatusText").textContent = "↻ Сохранение в таблицу (" + pendingSyncCount + ")...";
+
+      // 2. В фоне отправляем в Google Таблицу через защищённую очередь LockService
+      google.script.run.withSuccessHandler(function(savedRowNum) {
+        pendingSyncCount = Math.max(0, pendingSyncCount - 1);
+        for (var i = 0; i < LIVE_SHEET_ROWS.length; i++) {
+          if (LIVE_SHEET_ROWS[i].rowNumber === tempId && savedRowNum) {
+            LIVE_SHEET_ROWS[i].rowNumber = savedRowNum;
+            break;
+          }
+        }
+        unpackAllTransactions();
+        if (pendingSyncCount === 0) {
+          var nowStr = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+          document.getElementById("otaStatusText").textContent = "● Синхронизировано в " + nowStr;
+        }
+      }).withFailureHandler(function(err) {
+        pendingSyncCount = Math.max(0, pendingSyncCount - 1);
+        box.style.display = "block"; msg.style.color = "#e11d48"; msg.textContent = "Ошибка сохранения: " + err.message;
+      }).saveWebAppRow(payload);
+    }
+
+    function applyBundleData(data) {
+      if (!data) return;
+      if (data.accountNames && data.accountNames.length) { ACCOUNTS = data.accountNames; populateAccountsDropdowns(); }
+      if (data.expenseTree) { EXPENSE_TREE = data.expenseTree; }
+      if (data.incomeTree) { INCOME_TREE = data.incomeTree; }
+      ALL_ACCOUNTS_DATA = data.accounts || [];
+      LIVE_SHEET_ROWS = data.recentRows || [];
+      unpackAllTransactions();
+      setOpType(opType);
+      applyPeriodFilter();
+    }
+    function loadInstantCache() {
+      try {
+        var raw = localStorage.getItem(LOCAL_CACHE_KEY);
+        if (raw) applyBundleData(JSON.parse(raw));
+      } catch (e) {}
+    }
+    function syncOtaFromSheet() {
+      document.getElementById("otaStatusText").textContent = "↻ Синхронизация по воздуху...";
+      callBackend("bundle", {}, function(data) {
+        if (!data || data.error) return;
+        try { localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(data)); } catch (e) {}
+        applyBundleData(data);
+        var nowStr = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+        document.getElementById("otaStatusText").textContent = "● OTA Обновлено в " + nowStr;
+      }, function() {
+        document.getElementById("otaStatusText").textContent = "● Офлайн-режим (кэш)";
+      });
+    }
+
+    window.addEventListener("keydown", function(e) {
+      var editModal = document.getElementById("editModalBackdrop");
+      var catModal = document.getElementById("addCatModalBackdrop");
+      var isEditOpen = editModal && editModal.classList.contains("open");
+      var isCatOpen = catModal && catModal.classList.contains("open");
+      var activeEl = document.activeElement;
+      var tag = activeEl ? (activeEl.tagName || "").toUpperCase() : "";
+      if (e.key === "Enter") {
+        if (isCatOpen) { e.preventDefault(); saveNewCatOrSubcat(); return; }
+        if (isEditOpen) { e.preventDefault(); saveEditedRow(); return; }
+        if (document.getElementById("scr-form").classList.contains("active")) {
+          e.preventDefault();
+          submitOp();
+        }
+        return;
+      }
+      if (e.key === "Escape") {
+        if (isCatOpen) { closeAddCatModal(); return; }
+        if (isEditOpen) { closeEditModal(); return; }
+        toggleNumpad(false);
+        return;
+      }
+      if (isCatOpen || isEditOpen) return;
+      if (tag === "INPUT" && activeEl.id !== "laptopKeyTrap") return;
+      if (tag === "SELECT" || tag === "TEXTAREA") return;
+      if (document.getElementById("scr-form").classList.contains("active")) {
+        if (e.key >= "0" && e.key <= "9") {
+          e.preventDefault();
+          tapKey(e.key);
+        } else if (e.key === "." || e.key === ",") {
+          e.preventDefault();
+          tapDot();
+        } else if (e.key === "Backspace") {
+          e.preventDefault();
+          tapBack();
+        } else if (e.key === "Delete") {
+          e.preventDefault();
+          clearAmt();
+        }
+      }
+    });
+
+    populateAccountsDropdowns();
+    setOpType("Расход");
+    loadInstantCache();
+    unpackAllTransactions();
+    syncOtaFromSheet();
+  </script>
+</body>
+</html>
