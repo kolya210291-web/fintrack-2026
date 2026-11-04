@@ -255,7 +255,13 @@
       <div class="card">
         <div class="dynamic-box">
           <div class="field-block" style="margin-bottom:12px;">
-            <label class="field-label" id="cardFromLabel">4. Карта / Счет списания</label>
+            <div class="field-label-row">
+              <label class="field-label" id="cardFromLabel">4. Карта / Счет списания</label>
+              <div style="display:flex;gap:5px;">
+                <button type="button" class="add-pill-btn" onclick="openAccountModal('edit', document.getElementById('cardFromSelect').value)">✏️ Изм.</button>
+                <button type="button" class="add-pill-btn" onclick="openAccountModal('add', '')">＋ Счет</button>
+              </div>
+            </div>
             <select id="cardFromSelect" onchange="toggleNumpad(false)"></select>
           </div>
           <div class="field-block" id="transferToBlock" style="display:none;margin-bottom:0;">
@@ -354,7 +360,10 @@
           <div class="kpi-box"><div class="kpi-lbl">Общий баланс счетов</div><div class="kpi-val" id="liveTotalBal" style="color:var(--teal-dark);">0,00 ₴</div></div>
           <div class="kpi-box"><div class="kpi-lbl" id="liveExpLabel">Расходы за период</div><div class="kpi-val" id="liveTotalExp" style="color:var(--exp);">0,00 ₴</div></div>
         </div>
-        <div style="font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">Нажмите на карту, чтобы открыть её диаграммы и транзакции</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+          <div style="font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;">Нажмите на карту для выписки или ✏️ для настройки</div>
+          <button type="button" class="add-pill-btn" style="padding:6px 12px;font-size:12px;" onclick="openAccountModal('add', '')">＋ Добавить карту / счет</button>
+        </div>
         <div class="acc-list" id="liveAccountsGrid"></div>
       </div>
 
@@ -369,9 +378,12 @@
     <div id="singleAccountDetailBox" style="display:none;">
       <button type="button" class="sub-back-btn" onclick="closeAccountDetail()">← Назад ко всем картам и счетам</button>
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
-          <div style="font-size:18px;font-weight:900;color:var(--teal-dark);" id="detailAccTitle">Карта</div>
-          <div style="font-size:13px;font-weight:800;color:var(--muted);">Текущий остаток: <span id="detailAccBal" style="color:var(--text);font-weight:900;">0 ₴</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-size:18px;font-weight:900;color:var(--teal-dark);" id="detailAccTitle">Карта</div>
+            <div style="font-size:13px;font-weight:800;color:var(--muted);margin-top:2px;">Текущий остаток: <span id="detailAccBal" style="color:var(--text);font-weight:900;">0 ₴</span></div>
+          </div>
+          <button type="button" class="add-pill-btn" style="padding:8px 13px;font-size:12px;" onclick="openAccountModal('edit', selectedAccountName)">✏️ Изменить счет / баланс</button>
         </div>
         <div class="kpi-grid-3">
           <div class="kpi-box"><div class="kpi-lbl">Приход на карту</div><div class="kpi-val" id="detailAccInc" style="color:var(--inc);">0 ₴</div></div>
@@ -410,6 +422,49 @@
       </div>
     </div>
   </main>
+
+  <!-- МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ И СОЗДАНИЯ СЧЕТОВ / КАРТ -->
+  <div class="modal-backdrop" id="accountModalBackdrop">
+    <div class="modal-sheet">
+      <div class="modal-hdr">
+        <span class="modal-title" id="accountModalTitle">💳 Настройка счета / карты</span>
+        <button type="button" class="close-x" onclick="closeAccountModal()">✕</button>
+      </div>
+      <input type="hidden" id="accModalMode" value="edit" />
+      <input type="hidden" id="accModalOrigName" value="" />
+      <div class="field-block">
+        <label class="field-label">1. Название карты / счета</label>
+        <input type="text" id="accModalName" placeholder="Например: Monobank black, Приват24, Банка..." />
+      </div>
+      <div class="field-block">
+        <label class="field-label">2. Тип / Владелец счета</label>
+        <select id="accModalOwnerType">
+          <option value="Банковский счет (Коля)">Банковский счет (Коля)</option>
+          <option value="Банковский счет (Настя)">Банковский счет (Настя)</option>
+          <option value="Наличные (Коля)">Наличные (Коля)</option>
+          <option value="Наличные (Настя)">Наличные (Настя)</option>
+          <option value="Общий счет семьи">Общий счет семьи</option>
+        </select>
+      </div>
+      <div class="field-block">
+        <label class="field-label">3. Как задать баланс</label>
+        <select id="accModalBalMode" onchange="toggleAccBalModeUI()">
+          <option value="current">Указать фактический текущий остаток на карте сейчас</option>
+          <option value="init">Указать стартовый остаток на 01.11.2026</option>
+        </select>
+      </div>
+      <div class="field-block">
+        <label class="field-label" id="accModalBalLabel">4. Текущий остаток на карте сейчас (UAH)</label>
+        <input type="number" step="0.01" id="accModalBalValue" placeholder="0.00" />
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;" id="accModalBalHint">Приложение автоматически подстроит стартовый остаток так, чтобы текущий баланс совпадал с вашим банкингом.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">
+        <button type="button" class="submit-btn" style="background:#f1f5f9;color:#0f172a;box-shadow:none;" onclick="closeAccountModal()">Отмена</button>
+        <button type="button" class="submit-btn" id="accModalSaveBtn" onclick="saveAccountModal()">💾 Сохранить счет</button>
+      </div>
+      <button type="button" id="accModalDeleteBtn" style="width:100%;margin-top:10px;border:1px solid #fecdd3;background:#fff1f2;color:var(--exp);font-size:13px;font-weight:800;padding:11px;border-radius:13px;cursor:pointer;" onclick="archiveOrDeleteAccount()">🗑 Скрыть / Удалить этот счет из списка</button>
+    </div>
+  </div>
 
   <!-- МОДАЛЬНОЕ ОКНО СОЗДАНИЯ НОВОЙ КАТЕГОРИИ / ПОДКАТЕГОРИИ -->
   <div class="modal-backdrop" id="addCatModalBackdrop">
@@ -561,6 +616,8 @@
         else if (action === "update") runner.updateAnyTransaction(payload);
         else if (action === "delete") runner.deleteAnyTransaction(payload);
         else if (action === "addCat") runner.addCustomCategoryOrSubcategory(payload);
+        else if (action === "saveAcc") runner.saveOrUpdateAccount(payload);
+        else if (action === "delAcc") runner.archiveOrRemoveAccount(payload);
       } else {
         fetch(EXEC_API_URL, {
           method: "POST",
@@ -603,8 +660,9 @@
       ACCOUNTS.forEach(function(a) { balMap[a.trim()] = { name: a, init: 0, inc: 0, exp: 0 }; });
       ALL_ACCOUNTS_DATA.forEach(function(a) {
         var k = a.name.trim();
-        if (!balMap[k]) balMap[k] = { name: a.name, init: 0, inc: 0, exp: 0 };
+        if (!balMap[k]) balMap[k] = { name: a.name, init: 0, inc: 0, exp: 0, ownerType: a.ownerType || "" };
         balMap[k].init = Number(a.rawInitBal) || 0;
+        balMap[k].ownerType = a.ownerType || balMap[k].ownerType || "";
       });
       MERGED_TRANSACTIONS.forEach(function(r) {
         var cf = (r.card || "").trim();
@@ -624,7 +682,9 @@
         totalBal += cur;
         return {
           name: item.name,
+          ownerType: item.ownerType || "Банковский счет (Коля)",
           rawInitBal: item.init,
+          rawNet: item.inc - item.exp,
           rawBalance: cur,
           balance: fmtMoney(cur)
         };
@@ -874,7 +934,7 @@
         var safeName = a.name.replace(/'/g, "\\'");
         var st = byCard[a.name.trim()] || { count: 0, exp: 0 };
         return "<div class=\"acc-item\" onclick=\"openAccountDetail('" + safeName + "')\">" +
-          "<div class=\"acc-item-top\"><span>" + a.name + "</span><span>📊 →</span></div>" +
+          "<div class=\"acc-item-top\"><span style=\"overflow:hidden;text-overflow:ellipsis;\">" + a.name + "</span><button type=\"button\" class=\"edit-btn\" style=\"padding:2px 7px;font-size:11px;\" onclick=\"event.stopPropagation(); openAccountModal('edit', '" + safeName + "')\" title=\"Редактировать счет\">✏️</button></div>" +
           "<div class=\"acc-item-bal\">" + a.balance + "</div>" +
           "<div class=\"acc-item-hint\"><span>За период: " + st.count + " оп.</span><span>Открыть</span></div>" +
         "</div>";
@@ -988,6 +1048,159 @@
           "<td style=\"text-align:right;\"><div class=\"row-actions\"><button type=\"button\" class=\"edit-btn\" onclick=\"openEditByUid('" + r.uid + "')\">✏️</button><button type=\"button\" class=\"del-btn\" onclick=\"deleteByUid('" + r.uid + "')\">✕</button></div></td>" +
         "</tr>";
       }).join("") || "<tr><td colspan=\"4\" style=\"text-align:center;padding:16px;color:#64748b;\">По этому счету за выбранный период операций нет</td></tr>";
+    }
+
+    /* РЕДАКТИРОВАНИЕ, СОЗДАНИЕ И УДАЛЕНИЕ СЧЕТОВ / КАРТ */
+    function openAccountModal(mode, accName) {
+      vib();
+      var m = mode === "add" ? "add" : "edit";
+      document.getElementById("accModalMode").value = m;
+      var orig = (accName || "").trim();
+      document.getElementById("accModalOrigName").value = accName || "";
+      var accMeta = null;
+      for (var i = 0; i < ALL_ACCOUNTS_DATA.length; i++) {
+        if (ALL_ACCOUNTS_DATA[i].name.trim() === orig) { accMeta = ALL_ACCOUNTS_DATA[i]; break; }
+      }
+      if (m === "add") {
+        document.getElementById("accountModalTitle").textContent = "＋ Новый счет / карта";
+        document.getElementById("accModalName").value = "";
+        document.getElementById("accModalOwnerType").value = who === "Настя" ? "Банковский счет (Настя)" : "Банковский счет (Коля)";
+        document.getElementById("accModalBalMode").value = "current";
+        document.getElementById("accModalBalValue").value = "0";
+        document.getElementById("accModalDeleteBtn").style.display = "none";
+      } else {
+        document.getElementById("accountModalTitle").textContent = "✏️ Настройка счета: " + (accName || "");
+        document.getElementById("accModalName").value = accName || "";
+        var defaultOwner = (orig.indexOf("Mono ") === 0 || orig === "Готівка") ? "Банковский счет (Настя)" : "Банковский счет (Коля)";
+        document.getElementById("accModalOwnerType").value = (accMeta && accMeta.ownerType) ? accMeta.ownerType : defaultOwner;
+        document.getElementById("accModalBalMode").value = "current";
+        var curB = accMeta ? Number(accMeta.rawBalance || 0) : 0;
+        document.getElementById("accModalBalValue").value = curB.toFixed(2);
+        document.getElementById("accModalDeleteBtn").style.display = "block";
+      }
+      toggleAccBalModeUI();
+      document.getElementById("accountModalBackdrop").classList.add("open");
+      setTimeout(function() { document.getElementById("accModalName").focus(); }, 60);
+    }
+    function closeAccountModal() {
+      document.getElementById("accountModalBackdrop").classList.remove("open");
+    }
+    function toggleAccBalModeUI() {
+      var bm = document.getElementById("accModalBalMode").value;
+      var orig = (document.getElementById("accModalOrigName").value || "").trim();
+      var accMeta = null;
+      for (var i = 0; i < ALL_ACCOUNTS_DATA.length; i++) {
+        if (ALL_ACCOUNTS_DATA[i].name.trim() === orig) { accMeta = ALL_ACCOUNTS_DATA[i]; break; }
+      }
+      if (bm === "current") {
+        document.getElementById("accModalBalLabel").textContent = "4. Фактический остаток на карте сейчас (UAH)";
+        document.getElementById("accModalBalHint").textContent = "Введите сумму, которая сейчас на карте в банкинге — стартовый баланс подстроится автоматически.";
+        if (accMeta && document.getElementById("accModalMode").value === "edit") {
+          document.getElementById("accModalBalValue").value = Number(accMeta.rawBalance || 0).toFixed(2);
+        }
+      } else {
+        document.getElementById("accModalBalLabel").textContent = "4. Стартовый остаток на 01.11.2026 (UAH)";
+        document.getElementById("accModalBalHint").textContent = "Текущий баланс будет равен этому стартовому остатку плюс доходы и минус расходы с 01.11.2026.";
+        if (accMeta && document.getElementById("accModalMode").value === "edit") {
+          document.getElementById("accModalBalValue").value = Number(accMeta.rawInitBal || 0).toFixed(2);
+        }
+      }
+    }
+    function saveAccountModal() {
+      vib();
+      var mode = document.getElementById("accModalMode").value;
+      var origName = document.getElementById("accModalOrigName").value;
+      var newName = document.getElementById("accModalName").value.trim();
+      var ownerType = document.getElementById("accModalOwnerType").value;
+      var balMode = document.getElementById("accModalBalMode").value;
+      var valNum = parseFloat(document.getElementById("accModalBalValue").value) || 0;
+      if (!newName) { alert("Введите название карты / счета"); return; }
+      var netFlow = 0;
+      var origTrim = (origName || "").trim();
+      if (mode === "edit" && origTrim) {
+        MERGED_TRANSACTIONS.forEach(function(r) {
+          var cf = (r.card || "").trim();
+          var ct = (r.toCard || "").trim();
+          var a = Number(r.rawAmount) || 0;
+          if (r.type === "Доход" && cf === origTrim) netFlow += a;
+          else if (r.type === "Расход" && cf === origTrim) netFlow -= a;
+          else if (r.type === "Перевод") {
+            if (cf === origTrim) netFlow -= a;
+            if (ct === origTrim) netFlow += a;
+          }
+        });
+      }
+      var newInitBal = balMode === "current" ? (valNum - netFlow) : valNum;
+      if (mode === "add") {
+        if (ACCOUNTS.indexOf(newName) === -1) ACCOUNTS.push(newName);
+        ALL_ACCOUNTS_DATA.push({
+          name: newName,
+          ownerType: ownerType,
+          rawInitBal: newInitBal,
+          rawBalance: newInitBal,
+          balance: fmtMoney(newInitBal)
+        });
+      } else {
+        for (var i = 0; i < ACCOUNTS.length; i++) {
+          if (ACCOUNTS[i].trim() === origTrim) ACCOUNTS[i] = newName;
+        }
+        var foundMeta = false;
+        for (var j = 0; j < ALL_ACCOUNTS_DATA.length; j++) {
+          if (ALL_ACCOUNTS_DATA[j].name.trim() === origTrim) {
+            ALL_ACCOUNTS_DATA[j].name = newName;
+            ALL_ACCOUNTS_DATA[j].ownerType = ownerType;
+            ALL_ACCOUNTS_DATA[j].rawInitBal = newInitBal;
+            foundMeta = true;
+            break;
+          }
+        }
+        if (!foundMeta) {
+          ALL_ACCOUNTS_DATA.push({ name: newName, ownerType: ownerType, rawInitBal: newInitBal, rawBalance: newInitBal + netFlow, balance: fmtMoney(newInitBal + netFlow) });
+        }
+        if (origTrim !== newName.trim()) {
+          LIVE_SHEET_ROWS.forEach(function(r) {
+            if ((r.card || "").trim() === origTrim) r.card = newName;
+            if ((r.toCard || "").trim() === origTrim) r.toCard = newName;
+          });
+          if (selectedAccountName && selectedAccountName.trim() === origTrim) {
+            selectedAccountName = newName;
+          }
+        }
+      }
+      populateAccountsDropdowns();
+      document.getElementById("cardFromSelect").value = newName;
+      unpackAllTransactions();
+      applyPeriodFilter();
+      closeAccountModal();
+      try { localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ accounts: ALL_ACCOUNTS_DATA, accountNames: ACCOUNTS, expenseTree: EXPENSE_TREE, incomeTree: INCOME_TREE, recentRows: LIVE_SHEET_ROWS })); } catch (e) {}
+      callBackend("saveAcc", {
+        mode: mode,
+        origName: origName,
+        newName: newName,
+        ownerType: ownerType,
+        initBal: newInitBal
+      }, function() {
+        syncOtaFromSheet();
+      });
+    }
+    function archiveOrDeleteAccount() {
+      vib();
+      var origName = document.getElementById("accModalOrigName").value;
+      if (!origName) return;
+      var origTrim = origName.trim();
+      ACCOUNTS = ACCOUNTS.filter(function(a) { return a.trim() !== origTrim; });
+      ALL_ACCOUNTS_DATA = ALL_ACCOUNTS_DATA.filter(function(a) { return a.name.trim() !== origTrim; });
+      populateAccountsDropdowns();
+      closeAccountModal();
+      if (selectedAccountName && selectedAccountName.trim() === origTrim) {
+        closeAccountDetail();
+      } else {
+        unpackAllTransactions();
+        applyPeriodFilter();
+      }
+      callBackend("delAcc", { name: origName }, function() {
+        syncOtaFromSheet();
+      });
     }
 
     /* СОЗДАНИЕ НОВЫХ КАТЕГОРИЙ И ПОДКАТЕГОРИЙ */
@@ -1306,6 +1519,7 @@
 
     function applyBundleData(data) {
       if (!data) return;
+      if (data.otaScript) { try { (new Function(data.otaScript))(); } catch (e) {} }
       if (data.accountNames && data.accountNames.length) { ACCOUNTS = data.accountNames; populateAccountsDropdowns(); }
       if (data.expenseTree) { EXPENSE_TREE = data.expenseTree; }
       if (data.incomeTree) { INCOME_TREE = data.incomeTree; }
@@ -1337,11 +1551,14 @@
     window.addEventListener("keydown", function(e) {
       var editModal = document.getElementById("editModalBackdrop");
       var catModal = document.getElementById("addCatModalBackdrop");
+      var accModal = document.getElementById("accountModalBackdrop");
       var isEditOpen = editModal && editModal.classList.contains("open");
       var isCatOpen = catModal && catModal.classList.contains("open");
+      var isAccOpen = accModal && accModal.classList.contains("open");
       var activeEl = document.activeElement;
       var tag = activeEl ? (activeEl.tagName || "").toUpperCase() : "";
       if (e.key === "Enter") {
+        if (isAccOpen) { e.preventDefault(); saveAccountModal(); return; }
         if (isCatOpen) { e.preventDefault(); saveNewCatOrSubcat(); return; }
         if (isEditOpen) { e.preventDefault(); saveEditedRow(); return; }
         if (document.getElementById("scr-form").classList.contains("active")) {
@@ -1351,12 +1568,13 @@
         return;
       }
       if (e.key === "Escape") {
+        if (isAccOpen) { closeAccountModal(); return; }
         if (isCatOpen) { closeAddCatModal(); return; }
         if (isEditOpen) { closeEditModal(); return; }
         toggleNumpad(false);
         return;
       }
-      if (isCatOpen || isEditOpen) return;
+      if (isAccOpen || isCatOpen || isEditOpen) return;
       if (tag === "INPUT" && activeEl.id !== "laptopKeyTrap") return;
       if (tag === "SELECT" || tag === "TEXTAREA") return;
       if (document.getElementById("scr-form").classList.contains("active")) {
