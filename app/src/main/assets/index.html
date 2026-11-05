@@ -108,12 +108,31 @@
     .mini-toggle button { border: none; background: transparent; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; color: var(--muted); cursor: pointer; }
     .mini-toggle button.active { background: #fff; color: var(--teal-dark); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
-    .acc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 9px; }
-    .acc-item { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
-    .acc-item:active, .acc-item:hover { border-color: var(--teal); background: var(--teal-soft); }
-    .acc-item-top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 800; color: var(--text); }
-    .acc-item-bal { font-size: 17px; font-weight: 900; font-variant-numeric: tabular-nums; }
-    .acc-item-hint { font-size: 11px; font-weight: 700; color: var(--teal); display: flex; justify-content: space-between; }
+    /* Визуальные скины банковских карт и счетов */
+    .acc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 11px; }
+    .acc-card-tile { border-radius: 18px; padding: 13px 14px; display: flex; flex-direction: column; justify-content: space-between; min-height: 126px; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; user-select: none; position: relative; overflow: hidden; }
+    .acc-card-tile:active { transform: scale(0.98); }
+    .acc-card-tile::after { content: ""; position: absolute; top: -40%; right: -20%; width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%); pointer-events: none; }
+    .acc-card-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+    .acc-card-brand { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 900; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .acc-card-icon { font-size: 16px; flex-shrink: 0; }
+    .acc-card-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .acc-card-badge { font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .acc-card-tile .edit-btn { background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.35); color: inherit; padding: 2px 6px; font-size: 10.5px; border-radius: 7px; cursor: pointer; }
+    .acc-card-chip-row { display: flex; align-items: center; justify-content: space-between; margin: 9px 0 5px; }
+    .acc-mini-chip { width: 26px; height: 18px; border-radius: 5px; border: 1px solid rgba(0,0,0,0.15); box-shadow: inset 0 0 2px rgba(255,255,255,0.6); }
+    .acc-card-num { font-size: 10.5px; font-weight: 700; opacity: 0.75; letter-spacing: 0.1em; font-family: monospace; }
+    .acc-card-bal-row { display: flex; flex-direction: column; gap: 2px; }
+    .acc-card-bal { font-size: 19px; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1.1; letter-spacing: -0.02em; }
+    .acc-card-hint { font-size: 10.5px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; margin-top: 3px; opacity: 0.9; }
+    
+    /* Живой предпросмотр карты в форме ввода суммы */
+    .card-preview-banner { border-radius: 15px; padding: 11px 13px; margin-top: 8px; display: flex; align-items: center; justify-content: space-between; transition: all 0.15s ease; cursor: pointer; }
+    .card-preview-left { display: flex; align-items: center; gap: 9px; overflow: hidden; }
+    .card-preview-icon { font-size: 22px; flex-shrink: 0; }
+    .card-preview-title { font-size: 13.5px; font-weight: 900; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-preview-sub { font-size: 10.5px; font-weight: 700; opacity: 0.85; margin-top: 2px; }
+    .card-preview-bal { font-size: 16px; font-weight: 900; font-variant-numeric: tabular-nums; text-align: right; flex-shrink: 0; }
 
     .filter-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 8px; }
     .f-chip { border: 1px solid #cbd5e1; background: #f8fafc; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; color: #475569; cursor: pointer; white-space: nowrap; }
@@ -262,7 +281,8 @@
                 <button type="button" class="add-pill-btn" onclick="openAccountModal('add', '')">＋ Счет</button>
               </div>
             </div>
-            <select id="cardFromSelect" onchange="toggleNumpad(false)"></select>
+            <select id="cardFromSelect" onchange="toggleNumpad(false); updateActiveCardPreview();"></select>
+            <div id="activeCardLivePreview" class="card-preview-banner" onclick="switchTab('cards')" title="Нажмите, чтобы открыть обзор всех карт"></div>
           </div>
           <div class="field-block" id="transferToBlock" style="display:none;margin-bottom:0;">
             <label class="field-label">5. Куда (Карта / Счет зачисления)</label>
@@ -631,6 +651,159 @@
     }
     function fmtMoney(v) { return Number(v || 0).toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ₴"; }
 
+    function getCardSkin(name) {
+      var n = (name || "").trim().toLowerCase();
+      if (n === "monobank black" || n === "mono black (коля)") {
+        return {
+          bg: "linear-gradient(135deg, #27272a 0%, #18181b 50%, #09090b 100%)",
+          color: "#ffffff",
+          border: "1.5px solid #3f3f46",
+          chip: "#e4e4e7",
+          type: "Black • Коля",
+          icon: "💳",
+          badgeBg: "rgba(255,255,255,0.18)",
+          badgeColor: "#ffffff",
+          hintColor: "#a1a1aa",
+          shadow: "0 6px 16px rgba(0,0,0,0.35)"
+        };
+      }
+      if (n === "mono black" || n === "mono black (настя)" || n.indexOf("рожев") !== -1 || n.indexOf("pink") !== -1) {
+        return {
+          bg: "linear-gradient(135deg, #fb7185 0%, #f43f5e 50%, #e11d48 100%)",
+          color: "#ffffff",
+          border: "1.5px solid #fda4af",
+          chip: "#ffe4e6",
+          type: "Pink • Настя",
+          icon: "🌸",
+          badgeBg: "rgba(255,255,255,0.25)",
+          badgeColor: "#ffffff",
+          hintColor: "#ffe4e6",
+          shadow: "0 6px 16px rgba(244,63,94,0.3)"
+        };
+      }
+      if (n === "mono white" || n === "monobank white" || n.indexOf("біл") !== -1) {
+        return {
+          bg: "linear-gradient(135deg, #ffffff 0%, #f8fafc 55%, #e2e8f0 100%)",
+          color: "#0f172a",
+          border: "1.5px solid #cbd5e1",
+          chip: "#94a3b8",
+          type: "White • Настя",
+          icon: "🤍",
+          badgeBg: "#e2e8f0",
+          badgeColor: "#0f172a",
+          hintColor: "#64748b",
+          shadow: "0 6px 16px rgba(0,0,0,0.08)"
+        };
+      }
+      if (n.indexOf("privat") !== -1 || n.indexOf("приват") !== -1) {
+        return {
+          bg: "linear-gradient(135deg, #a7f3d0 0%, #5eead4 40%, #38bdf8 100%)",
+          color: "#064e3b",
+          border: "1.5px solid #6ee7b7",
+          chip: "#047857",
+          type: "Для виплат 🤝",
+          icon: "💚",
+          badgeBg: "rgba(6,78,59,0.14)",
+          badgeColor: "#064e3b",
+          hintColor: "#047857",
+          shadow: "0 6px 16px rgba(45,212,191,0.25)"
+        };
+      }
+      if (n.indexOf("pumb") !== -1 || n.indexOf("пумб") !== -1) {
+        return {
+          bg: "linear-gradient(135deg, #9d174d 0%, #701a75 50%, #4c1d95 100%)",
+          color: "#ffffff",
+          border: "1.5px solid #d946ef",
+          chip: "#fbcfe8",
+          type: "всеКАРТА 🟣",
+          icon: "💜",
+          badgeBg: "rgba(255,255,255,0.22)",
+          badgeColor: "#ffffff",
+          hintColor: "#f5d0fe",
+          shadow: "0 6px 16px rgba(112,26,117,0.35)"
+        };
+      }
+      if (n === "cash" || n.indexOf("cash (коля)") !== -1) {
+        return {
+          bg: "linear-gradient(135deg, #065f46 0%, #047857 50%, #0f766e 100%)",
+          color: "#ffffff",
+          border: "1.5px solid #10b981",
+          chip: "#a7f3d0",
+          type: "Готівка • Коля",
+          icon: "💵",
+          badgeBg: "rgba(255,255,255,0.2)",
+          badgeColor: "#ffffff",
+          hintColor: "#a7f3d0",
+          shadow: "0 6px 16px rgba(5,150,105,0.3)"
+        };
+      }
+      if (n === "готівка" || n.indexOf("готівка") !== -1) {
+        return {
+          bg: "linear-gradient(135deg, #d97706 0%, #b45309 50%, #92400e 100%)",
+          color: "#ffffff",
+          border: "1.5px solid #f59e0b",
+          chip: "#fde68a",
+          type: "Готівка • Настя",
+          icon: "👛",
+          badgeBg: "rgba(255,255,255,0.2)",
+          badgeColor: "#ffffff",
+          hintColor: "#fde68a",
+          shadow: "0 6px 16px rgba(217,119,6,0.3)"
+        };
+      }
+      if (n.indexOf("кешбек") !== -1 || n.indexOf("кешбэк") !== -1) {
+        return {
+          bg: "linear-gradient(135deg, #0284c7 0%, #0369a1 40%, #eab308 100%)",
+          color: "#ffffff",
+          border: "1.5px solid #38bdf8",
+          chip: "#fef08a",
+          type: "Кешбек 🇺🇦",
+          icon: "🇺🇦",
+          badgeBg: "rgba(255,255,255,0.2)",
+          badgeColor: "#ffffff",
+          hintColor: "#fef08a",
+          shadow: "0 6px 16px rgba(2,132,199,0.3)"
+        };
+      }
+      return {
+        bg: "linear-gradient(135deg, #334155 0%, #1e293b 100%)",
+        color: "#ffffff",
+        border: "1.5px solid #64748b",
+        chip: "#cbd5e1",
+        type: "Счет",
+        icon: "💳",
+        badgeBg: "rgba(255,255,255,0.15)",
+        badgeColor: "#ffffff",
+        hintColor: "#cbd5e1",
+        shadow: "0 6px 16px rgba(30,41,59,0.25)"
+      };
+    }
+    function updateActiveCardPreview() {
+      var selEl = document.getElementById("cardFromSelect");
+      var prevEl = document.getElementById("activeCardLivePreview");
+      if (!selEl || !prevEl) return;
+      var cName = selEl.value || "";
+      if (!cName) { prevEl.style.display = "none"; return; }
+      var skin = getCardSkin(cName);
+      var accMeta = null;
+      for (var i = 0; i < ALL_ACCOUNTS_DATA.length; i++) {
+        if (ALL_ACCOUNTS_DATA[i].name.trim() === cName.trim()) { accMeta = ALL_ACCOUNTS_DATA[i]; break; }
+      }
+      var balStr = accMeta ? accMeta.balance : "0,00 ₴";
+      prevEl.style.display = "flex";
+      prevEl.style.background = skin.bg;
+      prevEl.style.color = skin.color;
+      prevEl.style.border = skin.border;
+      prevEl.style.boxShadow = skin.shadow;
+      prevEl.innerHTML = '<div class="card-preview-left">' +
+        '<span class="card-preview-icon">' + skin.icon + '</span>' +
+        '<div>' +
+          '<div class="card-preview-title">' + cName + '</div>' +
+          '<div class="card-preview-sub" style="color:' + skin.hintColor + ';">' + skin.type + ' • Баланс:</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card-preview-bal">' + balStr + '</div>';
+    }
     function unpackAllTransactions() {
       var list = [];
       for (var i = 0; i < LIVE_SHEET_ROWS.length; i++) {
@@ -652,7 +825,7 @@
       }
       list.sort(function(a, b) { return (b.isoDate || "").localeCompare(a.isoDate || ""); });
       MERGED_TRANSACTIONS = list;
-      recomputeLocalAccountBalances();
+      recomputeLocalAccountBalances(); updateActiveCardPreview();
     }
 
     function recomputeLocalAccountBalances() {
@@ -933,10 +1106,23 @@
       document.getElementById("liveAccountsGrid").innerHTML = ALL_ACCOUNTS_DATA.map(function(a) {
         var safeName = a.name.replace(/'/g, "\\'");
         var st = byCard[a.name.trim()] || { count: 0, exp: 0 };
-        return "<div class=\"acc-item\" onclick=\"openAccountDetail('" + safeName + "')\">" +
-          "<div class=\"acc-item-top\"><span style=\"overflow:hidden;text-overflow:ellipsis;\">" + a.name + "</span><button type=\"button\" class=\"edit-btn\" style=\"padding:2px 7px;font-size:11px;\" onclick=\"event.stopPropagation(); openAccountModal('edit', '" + safeName + "')\" title=\"Редактировать счет\">✏️</button></div>" +
-          "<div class=\"acc-item-bal\">" + a.balance + "</div>" +
-          "<div class=\"acc-item-hint\"><span>За период: " + st.count + " оп.</span><span>Открыть</span></div>" +
+        var skin = getCardSkin(a.name);
+        return "<div class=\"acc-card-tile\" style=\"background:" + skin.bg + ";color:" + skin.color + ";border:" + skin.border + ";box-shadow:" + skin.shadow + ";\" onclick=\"openAccountDetail('" + safeName + "')\">" +
+          "<div class=\"acc-card-top\">" +
+            "<div class=\"acc-card-brand\"><span class=\"acc-card-icon\">" + skin.icon + "</span><span title=\"" + a.name + "\">" + a.name + "</span></div>" +
+            "<div class=\"acc-card-actions\">" +
+              "<span class=\"acc-card-badge\" style=\"background:" + skin.badgeBg + ";color:" + skin.badgeColor + ";\">" + skin.type + "</span>" +
+              "<button type=\"button\" class=\"edit-btn\" onclick=\"event.stopPropagation(); openAccountModal('edit', '" + safeName + "')\" title=\"Редактировать счет\">✏️</button>" +
+            </div>" +
+          "</div>" +
+          "<div class=\"acc-card-chip-row\">" +
+            "<div class=\"acc-mini-chip\" style=\"background:" + skin.chip + ";\"></div>" +
+            "<span class=\"acc-card-num\">•••• " + (a.name.indexOf("Mono") !== -1 ? "VISA" : "MC") + "</span>" +
+          "</div>" +
+          "<div class=\"acc-card-bal-row\">" +
+            "<div class=\"acc-card-bal\">" + a.balance + "</div>" +
+            "<div class=\"acc-card-hint\" style=\"color:" + skin.hintColor + ";\"><span>За период: " + st.count + " оп.</span><span style=\"font-weight:900;\">Открыть →</span></div>" +
+          "</div>" +
         "</div>";
       }).join("");
 
@@ -992,7 +1178,9 @@
       for (var i = 0; i < ALL_ACCOUNTS_DATA.length; i++) {
         if (ALL_ACCOUNTS_DATA[i].name.trim() === accTrim) { accMeta = ALL_ACCOUNTS_DATA[i]; break; }
       }
-      document.getElementById("detailAccTitle").textContent = "💳 " + selectedAccountName;
+      var skin = getCardSkin(selectedAccountName);
+      var titleEl = document.getElementById("detailAccTitle");
+      titleEl.innerHTML = '<span style="font-size:22px;margin-right:6px;">' + skin.icon + '</span>' + selectedAccountName + ' <span class="acc-card-badge" style="background:' + skin.badgeBg + ';color:' + skin.badgeColor + ';margin-left:6px;vertical-align:middle;">' + skin.type + '</span>';
       document.getElementById("detailAccBal").textContent = accMeta ? accMeta.balance : "0,00 ₴";
 
       var cardRows = getAccountPeriodRows(accTrim);
@@ -1422,6 +1610,7 @@
       if (prevFrom && ACCOUNTS.indexOf(prevFrom) !== -1) document.getElementById("cardFromSelect").value = prevFrom;
       if (prevTo && ACCOUNTS.indexOf(prevTo) !== -1) document.getElementById("cardToSelect").value = prevTo;
       else if (ACCOUNTS.length > 1) document.getElementById("cardToSelect").selectedIndex = 1;
+      updateActiveCardPreview();
     }
     function setOpType(t) {
       vib(); opType = t;
