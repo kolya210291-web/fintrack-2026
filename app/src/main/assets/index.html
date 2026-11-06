@@ -2,7 +2,6 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#00504a" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -965,6 +964,7 @@
     function showMoreCardRows() { cardDisplayLimit += 50; renderSingleAccountRowsList(); }
 
     function buildDonutChart(canvasId, prevChart, rows, targetType) {
+      if (typeof Chart === "undefined") return null;
       if (prevChart) prevChart.destroy();
       var catMap = {};
       rows.forEach(function(r) {
@@ -993,6 +993,7 @@
     }
 
     function buildTimelineBarChart(canvasId, prevChart, rows, forCardTrim) {
+      if (typeof Chart === "undefined") return null;
       if (prevChart) prevChart.destroy();
       var b = getPeriodBounds();
       var buckets = {};
@@ -1113,7 +1114,7 @@
             "<div class=\"acc-card-actions\">" +
               "<span class=\"acc-card-badge\" style=\"background:" + skin.badgeBg + ";color:" + skin.badgeColor + ";\">" + skin.type + "</span>" +
               "<button type=\"button\" class=\"edit-btn\" onclick=\"event.stopPropagation(); openAccountModal('edit', '" + safeName + "')\" title=\"Редактировать счет\">✏️</button>" +
-            </div>" +
+            "</div>" +
           "</div>" +
           "<div class=\"acc-card-chip-row\">" +
             "<div class=\"acc-mini-chip\" style=\"background:" + skin.chip + ";\"></div>" +
@@ -1126,6 +1127,7 @@
         "</div>";
       }).join("");
 
+      if (typeof Chart === "undefined") return;
       if (allCardsBarChart) allCardsBarChart.destroy();
       var activeCards = Object.values(byCard).filter(function(x) { return x.inc > 0 || x.exp > 0; });
       if (!activeCards.length) activeCards = Object.values(byCard).slice(0, 5);
@@ -1686,8 +1688,8 @@
       msg.textContent = "⚡ Мгновенно записано: " + payload.type + " " + payload.amount.toFixed(2) + " ₴ (можно сразу вводить следующую!)";
       document.getElementById("otaStatusText").textContent = "↻ Сохранение в таблицу (" + pendingSyncCount + ")...";
 
-      // 2. В фоне отправляем в Google Таблицу через защищённую очередь LockService
-      google.script.run.withSuccessHandler(function(savedRowNum) {
+      // 2. В фоне отправляем в Google Таблицу через универсальный callBackend (и в APK, и в браузере)
+      callBackend("save", payload, function(savedRowNum) {
         pendingSyncCount = Math.max(0, pendingSyncCount - 1);
         for (var i = 0; i < LIVE_SHEET_ROWS.length; i++) {
           if (LIVE_SHEET_ROWS[i].rowNumber === tempId && savedRowNum) {
@@ -1696,14 +1698,15 @@
           }
         }
         unpackAllTransactions();
+        try { localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({ accounts: ALL_ACCOUNTS_DATA, accountNames: ACCOUNTS, expenseTree: EXPENSE_TREE, incomeTree: INCOME_TREE, recentRows: LIVE_SHEET_ROWS })); } catch (e) {}
         if (pendingSyncCount === 0) {
           var nowStr = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
           document.getElementById("otaStatusText").textContent = "● Синхронизировано в " + nowStr;
         }
-      }).withFailureHandler(function(err) {
+      }, function(err) {
         pendingSyncCount = Math.max(0, pendingSyncCount - 1);
-        box.style.display = "block"; msg.style.color = "#e11d48"; msg.textContent = "Ошибка сохранения: " + err.message;
-      }).saveWebAppRow(payload);
+        box.style.display = "block"; msg.style.color = "#e11d48"; msg.textContent = "Ошибка сохранения: " + (err && err.message ? err.message : String(err));
+      });
     }
 
     function applyBundleData(data) {
