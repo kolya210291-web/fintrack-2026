@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#00504a" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -125,13 +126,30 @@
     .acc-card-bal { font-size: 19px; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1.1; letter-spacing: -0.02em; }
     .acc-card-hint { font-size: 10.5px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; margin-top: 3px; opacity: 0.9; }
     
-    /* Живой предпросмотр карты в форме ввода суммы */
-    .card-preview-banner { border-radius: 15px; padding: 11px 13px; margin-top: 8px; display: flex; align-items: center; justify-content: space-between; transition: all 0.15s ease; cursor: pointer; }
-    .card-preview-left { display: flex; align-items: center; gap: 9px; overflow: hidden; }
-    .card-preview-icon { font-size: 22px; flex-shrink: 0; }
-    .card-preview-title { font-size: 13.5px; font-weight: 900; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .card-preview-sub { font-size: 10.5px; font-weight: 700; opacity: 0.85; margin-top: 2px; }
-    .card-preview-bal { font-size: 16px; font-weight: 900; font-variant-numeric: tabular-nums; text-align: right; flex-shrink: 0; }
+    /* Кастомная раскрывашка счета в пункте 4 (на белом фоне, без черного баннера снизу) */
+    .acc-select-wrap { position: relative; width: 100%; user-select: none; }
+    .acc-select-trigger { width: 100%; padding: 12px 13px; border: 1.5px solid var(--border); border-radius: 13px; background: #fff; color: var(--text); display: flex; align-items: center; justify-content: space-between; cursor: pointer; min-height: 46px; gap: 10px; transition: border-color 0.15s, box-shadow 0.15s; }
+    .acc-select-trigger.open { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,106,98,0.12); }
+    .acc-trig-left { display: flex; flex-direction: column; overflow: hidden; }
+    .acc-trig-name { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .acc-trig-sub { font-size: 11.5px; font-weight: 600; color: var(--muted); margin-top: 2px; display: none; }
+    .acc-trig-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .acc-trig-bal { font-size: 15px; font-weight: 800; color: var(--teal-dark); font-variant-numeric: tabular-nums; display: none; }
+    .acc-trig-arrow { font-size: 12px; color: var(--muted); transition: transform 0.15s; }
+    .acc-select-trigger.open .acc-trig-arrow { transform: rotate(180deg); color: var(--teal); }
+    .acc-select-trigger.expanded-info .acc-trig-name { font-weight: 800; }
+    .acc-select-trigger.expanded-info .acc-trig-sub { display: block; }
+    .acc-select-trigger.expanded-info .acc-trig-bal { display: inline-block; }
+    .acc-dropdown-menu { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: #fff; border: 1.5px solid var(--teal); border-radius: 15px; box-shadow: 0 10px 28px rgba(15,23,42,0.16); z-index: 80; max-height: 290px; overflow-y: auto; display: none; padding: 6px; }
+    .acc-dropdown-menu.open { display: block; }
+    .acc-opt-item { padding: 10px 12px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; border-bottom: 1px solid #f1f5f9; gap: 8px; }
+    .acc-opt-item:last-child { border-bottom: none; }
+    .acc-opt-item:active, .acc-opt-item:hover { background: #f8fafc; }
+    .acc-opt-item.selected { background: var(--teal-soft); }
+    .acc-opt-left { display: flex; flex-direction: column; overflow: hidden; }
+    .acc-opt-title { font-size: 14px; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .acc-opt-owner { font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+    .acc-opt-bal { font-size: 14px; font-weight: 800; color: var(--teal-dark); font-variant-numeric: tabular-nums; flex-shrink: 0; }
 
     .filter-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 8px; }
     .f-chip { border: 1px solid #cbd5e1; background: #f8fafc; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; color: #475569; cursor: pointer; white-space: nowrap; }
@@ -280,8 +298,20 @@
                 <button type="button" class="add-pill-btn" onclick="openAccountModal('add', '')">＋ Счет</button>
               </div>
             </div>
-            <select id="cardFromSelect" onchange="toggleNumpad(false); updateActiveCardPreview();"></select>
-            <div id="activeCardLivePreview" class="card-preview-banner" onclick="switchTab('cards')" title="Нажмите, чтобы открыть обзор всех карт"></div>
+            <select id="cardFromSelect" style="display:none;" onchange="updateActiveCardPreview()"></select>
+            <div class="acc-select-wrap" id="accSelectWrap">
+              <div class="acc-select-trigger" id="accSelectTrigger" onclick="toggleAccDropdown(event)">
+                <div class="acc-trig-left">
+                  <div class="acc-trig-name" id="accTrigName">Monobank black</div>
+                  <div class="acc-trig-sub" id="accTrigSub">Коля</div>
+                </div>
+                <div class="acc-trig-right">
+                  <span class="acc-trig-bal" id="accTrigBal">0,00 ₴</span>
+                  <span class="acc-trig-arrow">⌄</span>
+                </div>
+              </div>
+              <div class="acc-dropdown-menu" id="accDropdownMenu"></div>
+            </div>
           </div>
           <div class="field-block" id="transferToBlock" style="display:none;margin-bottom:0;">
             <label class="field-label">5. Куда (Карта / Счет зачисления)</label>
@@ -777,32 +807,85 @@
         shadow: "0 6px 16px rgba(30,41,59,0.25)"
       };
     }
+    var isCardManuallyPicked = false;
+    function getAccountMetaByName(name) {
+      var t = (name || "").trim();
+      for (var i = 0; i < ALL_ACCOUNTS_DATA.length; i++) {
+        if (ALL_ACCOUNTS_DATA[i].name.trim() === t) return ALL_ACCOUNTS_DATA[i];
+      }
+      return null;
+    }
+    function getAccountOwnerLabel(cName, accMeta) {
+      if (accMeta && accMeta.ownerType) {
+        if (accMeta.ownerType.indexOf("Настя") !== -1) return "Настя";
+        if (accMeta.ownerType.indexOf("Коля") !== -1) return "Коля";
+      }
+      var n = (cName || "").trim().toLowerCase();
+      if (n === "mono black" || n === "mono white" || n === "monobank white" || n.indexOf("готівка") !== -1) return "Настя";
+      return who || "Коля";
+    }
     function updateActiveCardPreview() {
       var selEl = document.getElementById("cardFromSelect");
-      var prevEl = document.getElementById("activeCardLivePreview");
-      if (!selEl || !prevEl) return;
-      var cName = selEl.value || "";
-      if (!cName) { prevEl.style.display = "none"; return; }
-      var skin = getCardSkin(cName);
-      var accMeta = null;
-      for (var i = 0; i < ALL_ACCOUNTS_DATA.length; i++) {
-        if (ALL_ACCOUNTS_DATA[i].name.trim() === cName.trim()) { accMeta = ALL_ACCOUNTS_DATA[i]; break; }
-      }
+      var trigEl = document.getElementById("accSelectTrigger");
+      if (!selEl || !trigEl) return;
+      var cName = selEl.value || ACCOUNTS[0] || "";
+      var accMeta = getAccountMetaByName(cName);
       var balStr = accMeta ? accMeta.balance : "0,00 ₴";
-      prevEl.style.display = "flex";
-      prevEl.style.background = skin.bg;
-      prevEl.style.color = skin.color;
-      prevEl.style.border = skin.border;
-      prevEl.style.boxShadow = skin.shadow;
-      prevEl.innerHTML = '<div class="card-preview-left">' +
-        '<span class="card-preview-icon">' + skin.icon + '</span>' +
-        '<div>' +
-          '<div class="card-preview-title">' + cName + '</div>' +
-          '<div class="card-preview-sub" style="color:' + skin.hintColor + ';">' + skin.type + ' • Баланс:</div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="card-preview-bal">' + balStr + '</div>';
+      var ownerLbl = getAccountOwnerLabel(cName, accMeta);
+      document.getElementById("accTrigName").textContent = cName;
+      document.getElementById("accTrigSub").textContent = ownerLbl + " (запись: " + who + ")";
+      document.getElementById("accTrigBal").textContent = balStr;
+      trigEl.classList.toggle("expanded-info", isCardManuallyPicked);
+      renderAccDropdownMenu();
     }
+    function renderAccDropdownMenu() {
+      var menuEl = document.getElementById("accDropdownMenu");
+      var selEl = document.getElementById("cardFromSelect");
+      if (!menuEl || !selEl) return;
+      var curVal = (selEl.value || "").trim();
+      menuEl.innerHTML = ACCOUNTS.map(function(a, idx) {
+        var meta = getAccountMetaByName(a);
+        var bal = meta ? meta.balance : "0,00 ₴";
+        var own = getAccountOwnerLabel(a, meta);
+        var isSel = a.trim() === curVal;
+        return "<div class=\"acc-opt-item" + (isSel ? " selected" : "") + "\" onclick=\"pickCardByIdx(" + idx + ")\">" +
+          "<div class=\"acc-opt-left\">" +
+            "<div class=\"acc-opt-title\">" + a + "</div>" +
+            "<div class=\"acc-opt-owner\">" + own + "</div>" +
+          "</div>" +
+          "<div class=\"acc-opt-bal\">" + bal + "</div>" +
+        "</div>";
+      }).join("");
+    }
+    function toggleAccDropdown(e) {
+      if (e) e.stopPropagation();
+      toggleNumpad(false);
+      var menuEl = document.getElementById("accDropdownMenu");
+      var trigEl = document.getElementById("accSelectTrigger");
+      var isOpen = menuEl.classList.contains("open");
+      if (!isOpen) renderAccDropdownMenu();
+      menuEl.classList.toggle("open", !isOpen);
+      trigEl.classList.toggle("open", !isOpen);
+    }
+    function pickCardByIdx(idx) { var a = ACCOUNTS[idx]; if (a !== undefined) pickCardFromMenu(a); }
+    function pickCardFromMenu(accName) {
+      vib();
+      var selEl = document.getElementById("cardFromSelect");
+      selEl.value = accName;
+      isCardManuallyPicked = true;
+      document.getElementById("accDropdownMenu").classList.remove("open");
+      document.getElementById("accSelectTrigger").classList.remove("open");
+      updateActiveCardPreview();
+    }
+    document.addEventListener("click", function(e) {
+      var wrap = document.getElementById("accSelectWrap");
+      if (wrap && !wrap.contains(e.target)) {
+        var m = document.getElementById("accDropdownMenu");
+        var t = document.getElementById("accSelectTrigger");
+        if (m) m.classList.remove("open");
+        if (t) t.classList.remove("open");
+      }
+    });
     function unpackAllTransactions() {
       var list = [];
       for (var i = 0; i < LIVE_SHEET_ROWS.length; i++) {
@@ -1104,16 +1187,15 @@
         }
       });
 
-      document.getElementById("liveAccountsGrid").innerHTML = ALL_ACCOUNTS_DATA.map(function(a) {
-        var safeName = a.name.replace(/'/g, "\\'");
+      document.getElementById("liveAccountsGrid").innerHTML = ALL_ACCOUNTS_DATA.map(function(a, idx) {
         var st = byCard[a.name.trim()] || { count: 0, exp: 0 };
         var skin = getCardSkin(a.name);
-        return "<div class=\"acc-card-tile\" style=\"background:" + skin.bg + ";color:" + skin.color + ";border:" + skin.border + ";box-shadow:" + skin.shadow + ";\" onclick=\"openAccountDetail('" + safeName + "')\">" +
+        return "<div class=\"acc-card-tile\" style=\"background:" + skin.bg + ";color:" + skin.color + ";border:" + skin.border + ";box-shadow:" + skin.shadow + ";\" onclick=\"openAccountDetailByIdx(" + idx + ")\">" +
           "<div class=\"acc-card-top\">" +
             "<div class=\"acc-card-brand\"><span class=\"acc-card-icon\">" + skin.icon + "</span><span title=\"" + a.name + "\">" + a.name + "</span></div>" +
             "<div class=\"acc-card-actions\">" +
               "<span class=\"acc-card-badge\" style=\"background:" + skin.badgeBg + ";color:" + skin.badgeColor + ";\">" + skin.type + "</span>" +
-              "<button type=\"button\" class=\"edit-btn\" onclick=\"event.stopPropagation(); openAccountModal('edit', '" + safeName + "')\" title=\"Редактировать счет\">✏️</button>" +
+              "<button type=\"button\" class=\"edit-btn\" onclick=\"event.stopPropagation(); openAccountModalByIdx(" + idx + ")\" title=\"Редактировать счет\">✏️</button>" +
             "</div>" +
           "</div>" +
           "<div class=\"acc-card-chip-row\">" +
@@ -1149,6 +1231,8 @@
       });
     }
 
+    function openAccountDetailByIdx(idx) { var a = ALL_ACCOUNTS_DATA[idx]; if (a) openAccountDetail(a.name); }
+    function openAccountModalByIdx(idx) { var a = ALL_ACCOUNTS_DATA[idx]; if (a) openAccountModal("edit", a.name); }
     function openAccountDetail(accName) {
       vib();
       selectedAccountName = accName;
@@ -1600,6 +1684,8 @@
       document.getElementById("whoKolya").classList.toggle("active", w === "Коля");
       document.getElementById("whoNastya").classList.toggle("active", w === "Настя");
       document.getElementById("cardFromSelect").value = w === "Настя" ? "Mono black " : "Monobank black";
+      isCardManuallyPicked = false;
+      updateActiveCardPreview();
     }
     function populateAccountsDropdowns() {
       var prevFrom = document.getElementById("cardFromSelect").value;
